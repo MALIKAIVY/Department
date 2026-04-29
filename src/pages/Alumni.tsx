@@ -2,20 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Search, Briefcase, MapPin } from 'lucide-react';
-import type { Alumni as AlumniType } from '../lib/types';
+import type { Profile } from '../lib/types';
 import { Avatar, Button, Card, EmptyState, Field, PageHeader, Select, Spinner } from '../components/ui';
 import { INDUSTRIES } from '../lib/constants';
 
-interface AlumniWithProfile extends AlumniType {
-  full_name?: string;
-  avatar_url?: string;
-  bio?: string;
-  email?: string;
+interface AlumniCard {
+  id: string;
+  full_name: string;
+  avatar_url?: string | null;
+  graduation_year?: number;
+  current_company?: string | null;
+  current_position?: string | null;
+  industry?: string | null;
 }
 
 export const Alumni: React.FC = () => {
   const navigate = useNavigate();
-  const [alumni, setAlumni] = useState<AlumniWithProfile[]>([]);
+  const [alumni, setAlumni] = useState<AlumniCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
@@ -25,7 +28,7 @@ export const Alumni: React.FC = () => {
 
   useEffect(() => {
     fetchAlumni();
-  }, [filters]);
+  }, [filters, searchTerm]);
 
   const fetchAlumni = async () => {
     setIsLoading(true);
@@ -34,11 +37,20 @@ export const Alumni: React.FC = () => {
       if (filters.graduationYear) url += `graduation_year=${filters.graduationYear}&`;
       if (filters.industry) url += `industry=${encodeURIComponent(filters.industry)}&`;
 
-      const data = await api.fetch(url);
+      const data: Profile[] = await api.fetch(url);
       
-      let filtered = data || [];
+      let filtered = (data || []).map((profile) => ({
+        id: profile.id,
+        full_name: profile.full_name,
+        avatar_url: profile.avatar_url,
+        graduation_year: profile.alumni?.graduation_year,
+        current_company: profile.alumni?.current_company,
+        current_position: profile.alumni?.current_position,
+        industry: profile.alumni?.industry,
+      }));
+
       if (searchTerm) {
-        filtered = filtered.filter((a: any) =>
+        filtered = filtered.filter((a) =>
           a.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
         );
       }

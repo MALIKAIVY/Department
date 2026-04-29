@@ -26,6 +26,12 @@ export interface AlumniData {
   alumni_id: string;
   graduation_year: number;
   degree_earned: string;
+  current_company?: string | null;
+  current_position?: string | null;
+  industry?: string | null;
+  linkedin_url?: string | null;
+  github_url?: string | null;
+  is_visible?: boolean;
 }
 
 export interface Profile {

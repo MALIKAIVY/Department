@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Award, BookOpen, CheckCircle, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, Card, PageHeader } from '../components/ui';
@@ -18,6 +19,7 @@ const roleCards = {
       title: 'Share Your Yearbook Entry',
       description: 'Create a memorable yearbook entry with a photo, quote, and memories.',
       action: 'Create Entry',
+      href: '/yearbook',
       variant: 'primary' as const,
       className: 'bg-blue-50 dark:bg-blue-900/20',
     },
@@ -25,6 +27,7 @@ const roleCards = {
       title: 'Connect with Alumni',
       description: 'Network with graduates and learn about their career journeys.',
       action: 'Browse Alumni',
+      href: '/alumni',
       variant: 'success' as const,
       className: 'bg-emerald-50 dark:bg-emerald-900/20',
     },
@@ -34,6 +37,7 @@ const roleCards = {
       title: 'Your Network',
       description: 'Stay connected with current students and other alumni.',
       action: 'View Connections',
+      href: '/alumni',
       variant: 'primary' as const,
       className: '',
     },
@@ -41,6 +45,7 @@ const roleCards = {
       title: 'Update Your Profile',
       description: 'Share your current role, company, and career achievements.',
       action: 'Edit Profile',
+      href: '/profile/edit',
       variant: 'primary' as const,
       className: '',
     },
@@ -48,6 +53,7 @@ const roleCards = {
 };
 
 export const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { user, profile } = useAuthStore();
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -103,7 +109,7 @@ export const Dashboard: React.FC = () => {
             <Card key={card.title} className={`p-6 ${card.className}`}>
               <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{card.title}</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">{card.description}</p>
-              <Button variant={card.variant} className="mt-4">
+              <Button variant={card.variant} onClick={() => navigate(card.href)} className="mt-4">
                 {card.action}
               </Button>
             </Card>
@@ -127,7 +133,7 @@ export const Dashboard: React.FC = () => {
             <Card key={card.title} className="p-6">
               <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{card.title}</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">{card.description}</p>
-              <Button className="mt-4">{card.action}</Button>
+              <Button onClick={() => navigate(card.href)} className="mt-4">{card.action}</Button>
             </Card>
           ))}
         </div>

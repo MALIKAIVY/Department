@@ -164,6 +164,37 @@ async def get_stats(
         "userConnections": active_connections
     }
 
+@router.get("/alumni", response_model=List[schemas.ProfileBase])
+async def list_alumni(
+    graduation_year: Optional[int] = None,
+    industry: Optional[str] = None,
+    db: AsyncSession = Depends(database.get_db),
+    current_user: models.Profile = Depends(get_current_user)
+):
+    stmt = (
+        select(models.Profile)
+        .join(models.Alumni)
+        .where(
+            models.Profile.role == "alumni",
+            models.Profile.is_active == True,
+            models.Alumni.is_visible == True,
+        )
+        .options(
+            joinedload(models.Profile.student),
+            joinedload(models.Profile.faculty),
+            joinedload(models.Profile.alumni),
+        )
+        .order_by(models.Profile.full_name.asc())
+    )
+
+    if graduation_year:
+        stmt = stmt.where(models.Alumni.graduation_year == graduation_year)
+    if industry:
+        stmt = stmt.where(models.Alumni.industry == industry)
+
+    result = await db.execute(stmt)
+    return result.unique().scalars().all()
+
 @router.get("/{user_id}", response_model=schemas.ProfileBase)
 async def get_public_profile(
     user_id: uuid.UUID,
