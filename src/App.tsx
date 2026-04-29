@@ -46,7 +46,7 @@ function App() {
             <Route path="/search" element={<Search />} />
             <Route path="/profile/:id" element={<ProfilePage />} />
             <Route path="/profile/edit" element={<ProfileEdit />} />
-            <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin', 'faculty']}><Admin /></ProtectedRoute>} />
             <Route
               path="/announcements"
               element={<EmptyState title="Announcements" description="No announcements yet. Stay tuned for updates." />}

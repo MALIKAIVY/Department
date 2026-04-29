@@ -74,8 +74,10 @@ app.add_middleware(
 )
 
 # Routes
+from routers import auth, users, yearbook, announcements, connections, admin
 app.include_router(auth.router, prefix=settings.API_V1_STR, tags=["auth"])
 app.include_router(users.router, prefix=settings.API_V1_STR, tags=["users"])
+app.include_router(admin.router, prefix=settings.API_V1_STR, tags=["admin"])
 app.include_router(yearbook.router, prefix=settings.API_V1_STR, tags=["yearbook"])
 app.include_router(connections.router, prefix=settings.API_V1_STR, tags=["connections"])
 app.include_router(announcements.router, prefix=settings.API_V1_STR, tags=["announcements"])

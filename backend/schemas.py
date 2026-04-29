@@ -140,6 +140,7 @@ class AnnouncementCreate(BaseModel):
     title: str
     content: str
     target_roles: List[str] = []
+    media_url: Optional[str] = None
     is_published: bool = True
 
 class AnnouncementOut(BaseModel):
@@ -148,6 +149,7 @@ class AnnouncementOut(BaseModel):
     content: str
     author_id: uuid.UUID
     target_roles: List[str]
+    media_url: Optional[str] = None
     created_at: datetime
     author_name: Optional[str] = None
 
@@ -155,6 +157,22 @@ class AnnouncementOut(BaseModel):
 
 class DashboardStats(BaseModel):
     totalUsers: int
+    studentCount: int
+    facultyCount: int
+    alumniCount: int
+    adminCount: int
     totalYearbookEntries: int
     pendingEntries: int
     userConnections: int
+
+# --- Admin Schemas ---
+
+class AdminStudentCreate(BaseModel):
+    email: EmailStr
+    full_name: str
+    student_id: str
+    graduation_year: int
+    password: Optional[str] = None # If none, generate one
+
+class BulkStudentCreate(BaseModel):
+    students: List[AdminStudentCreate]

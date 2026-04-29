@@ -14,10 +14,9 @@ export const APP_NAME = 'DTCY';
 export const APP_FULL_NAME = 'Digital Tech-Connect Yearbook';
 
 export const USER_ROLES = ['student', 'faculty', 'alumni', 'admin'] as const satisfies readonly UserRole[];
-export const PUBLIC_SIGNUP_ROLES = ['student', 'faculty', 'alumni'] as const satisfies readonly UserRole[];
+export const PUBLIC_SIGNUP_ROLES = ['faculty', 'alumni'] as const satisfies readonly UserRole[];
 
 export const ROLE_DESCRIPTIONS: Record<(typeof PUBLIC_SIGNUP_ROLES)[number], string> = {
-  student: 'Current student pursuing degree',
   faculty: 'Faculty member or instructor',
   alumni: 'Graduate of the program',
 };
@@ -75,7 +74,7 @@ export const NAV_ITEMS = [
     label: 'Admin Panel',
     href: '/admin',
     icon: BarChart3,
-    roles: ['admin'],
+    roles: ['admin', 'faculty'],
   },
   {
     label: 'Moderation',

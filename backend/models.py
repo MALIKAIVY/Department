@@ -115,6 +115,7 @@ class Announcement(Base):
     content = Column(String, nullable=False)
     author_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"))
     target_roles = Column(ARRAY(String), default=[])
+    media_url = Column(String)
     is_published = Column(Boolean, default=False)
     published_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)

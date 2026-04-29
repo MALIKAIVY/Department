@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Award, BookOpen, CheckCircle, Users } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Award, BookOpen, CheckCircle, Users, Megaphone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, Card, PageHeader } from '../components/ui';
 import { api } from '../lib/api';
@@ -61,6 +61,7 @@ export const Dashboard: React.FC = () => {
     pendingEntries: 0,
     userConnections: 0,
   });
+  const [announcements, setAnnouncements] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -77,7 +78,17 @@ export const Dashboard: React.FC = () => {
       }
     };
 
+    const fetchAnnouncements = async () => {
+      try {
+        const data = await api.fetch('/announcements');
+        setAnnouncements(data);
+      } catch {
+        console.error('Failed to fetch announcements');
+      }
+    };
+
     fetchStats();
+    fetchAnnouncements();
   }, [user]);
 
   return (
@@ -139,10 +150,70 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      <Card className="p-6">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Recent Announcements</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400">No announcements yet. Stay tuned for updates!</p>
-      </Card>
+      {user?.role === 'faculty' && (
+        <Card className="p-6 bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-600 rounded-full text-white">
+                <Megaphone className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Share an Update</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Publish a new announcement with photos or videos.</p>
+              </div>
+            </div>
+            <Link to="/admin">
+              <Button>Create Announcement</Button>
+            </Link>
+          </div>
+        </Card>
+      )}
+
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recent Announcements</h2>
+        {announcements.length === 0 ? (
+          <Card className="p-6 text-center">
+            <p className="text-sm text-gray-600 dark:text-gray-400">No announcements yet. Stay tuned for updates!</p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {announcements.map((ann) => (
+              <Card key={ann.id} className="overflow-hidden">
+                {ann.media_url && (
+                  <div className="aspect-video w-full bg-gray-100 dark:bg-gray-800">
+                    {/\.(mp4|webm|mov)(\?.*)?$/i.test(ann.media_url) ? (
+                      <video 
+                        src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${ann.media_url}`} 
+                        className="h-full w-full object-cover" 
+                        controls 
+                      />
+                    ) : (
+                      <img 
+                        src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${ann.media_url}`} 
+                        alt={ann.title} 
+                        className="h-full w-full object-cover" 
+                      />
+                    )}
+                  </div>
+                )}
+                <div className="p-6">
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">{ann.title}</h3>
+                    <span className="text-xs text-gray-500">{new Date(ann.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <p className="whitespace-pre-wrap text-sm text-gray-600 dark:text-gray-400">{ann.content}</p>
+                  <div className="mt-4 flex items-center gap-2 border-t pt-4 dark:border-gray-700">
+                    <div className="h-6 w-6 rounded-full bg-blue-100 p-1 text-xs font-bold text-blue-600 dark:bg-blue-900/30">
+                      {ann.author_name?.charAt(0) || 'A'}
+                    </div>
+                    <span className="text-xs font-medium text-gray-500">By {ann.author_name}</span>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

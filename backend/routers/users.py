@@ -145,6 +145,19 @@ async def get_stats(
     total_users_stmt = select(func.count(models.Profile.id))
     total_users = (await db.execute(total_users_stmt)).scalar() or 0
     
+    # Role counts
+    student_count_stmt = select(func.count(models.Profile.id)).where(models.Profile.role == "student")
+    student_count = (await db.execute(student_count_stmt)).scalar() or 0
+    
+    faculty_count_stmt = select(func.count(models.Profile.id)).where(models.Profile.role == "faculty")
+    faculty_count = (await db.execute(faculty_count_stmt)).scalar() or 0
+    
+    alumni_count_stmt = select(func.count(models.Profile.id)).where(models.Profile.role == "alumni")
+    alumni_count = (await db.execute(alumni_count_stmt)).scalar() or 0
+    
+    admin_count_stmt = select(func.count(models.Profile.id)).where(models.Profile.role == "admin")
+    admin_count = (await db.execute(admin_count_stmt)).scalar() or 0
+    
     # Total Yearbook Entries
     total_entries_stmt = select(func.count(models.YearbookEntry.id))
     total_entries = (await db.execute(total_entries_stmt)).scalar() or 0
@@ -159,6 +172,10 @@ async def get_stats(
     
     return {
         "totalUsers": total_users,
+        "studentCount": student_count,
+        "facultyCount": faculty_count,
+        "alumniCount": alumni_count,
+        "adminCount": admin_count,
         "totalYearbookEntries": total_entries,
         "pendingEntries": pending_entries,
         "userConnections": active_connections

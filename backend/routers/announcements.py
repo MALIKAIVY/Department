@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func, and_, or_
 from sqlalchemy.orm import joinedload
@@ -7,6 +7,7 @@ import schemas, models, database
 from core.security import get_current_user
 import uuid
 from datetime import datetime
+import os
 
 router = APIRouter(prefix="/announcements", tags=["announcements"])
 
@@ -53,6 +54,46 @@ async def get_announcements(
         out.append(item)
     return out
 
+ALLOWED_MEDIA_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "video/mp4": ".mp4",
+    "video/webm": ".webm",
+    "video/quicktime": ".mov",
+}
+MAX_MEDIA_SIZE = 50 * 1024 * 1024
+
+@router.post("/media")
+async def upload_announcement_media(
+    file: UploadFile = File(...),
+    current_user: models.Profile = Depends(get_current_user)
+):
+    if current_user.role not in ["admin", "faculty"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    if file.content_type not in ALLOWED_MEDIA_TYPES:
+        raise HTTPException(status_code=400, detail="Only JPG, PNG, WebP, MP4, WebM, or MOV files are allowed")
+
+    content = await file.read()
+    if len(content) > MAX_MEDIA_SIZE:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB")
+
+    upload_dir = os.path.join("uploads", "announcements")
+    os.makedirs(upload_dir, exist_ok=True)
+
+    extension = ALLOWED_MEDIA_TYPES[file.content_type]
+    file_name = f"{current_user.id}-{uuid.uuid4()}{extension}"
+    file_path = os.path.join(upload_dir, file_name)
+
+    with open(file_path, "wb") as media_file:
+        media_file.write(content)
+
+    return {
+        "url": f"/uploads/announcements/{file_name}",
+        "media_type": "video" if file.content_type.startswith("video/") else "image",
+    }
+
 @router.post("/", response_model=schemas.AnnouncementOut)
 async def create_announcement(
     ann_in: schemas.AnnouncementCreate,
@@ -67,8 +108,10 @@ async def create_announcement(
         title=ann_in.title,
         content=ann_in.content,
         target_roles=ann_in.target_roles,
+        media_url=ann_in.media_url,
         is_published=ann_in.is_published,
-        author_id=current_user.id
+        author_id=current_user.id,
+        published_at=datetime.utcnow() if ann_in.is_published else None
     )
     db.add(new_ann)
     await db.commit()
