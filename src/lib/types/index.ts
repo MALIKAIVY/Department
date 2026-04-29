@@ -99,6 +99,7 @@ export interface Announcement {
   id: string;
   title: string;
   content: string;
+  media_url?: string | null;
   author_id: string;
   author_name?: string;
   target_roles: UserRole[];

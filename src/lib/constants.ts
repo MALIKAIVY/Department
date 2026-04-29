@@ -1,7 +1,6 @@
 import {
   BarChart3,
   BookOpen,
-  Briefcase,
   GraduationCap,
   LayoutDashboard,
   MessageSquare,

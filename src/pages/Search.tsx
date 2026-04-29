@@ -73,7 +73,7 @@ export const Search: React.FC = () => {
             </div>
           </div>
           <Button
-            onClick={handleSearch}
+            onClick={() => handleSearch()}
             disabled={isSearching}
             className="px-6 py-3"
           >

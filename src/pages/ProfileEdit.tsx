@@ -8,7 +8,7 @@ import { Avatar, Button, Card, Field, Input, Textarea } from '../components/ui';
 
 export const ProfileEdit: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile, updateUserAndProfile } = useAuthStore();
+  const { user, profile, updateProfile } = useAuthStore();
   const [formData, setFormData] = useState<any | null>(profile || null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState(profile?.avatar_url);
@@ -69,7 +69,7 @@ export const ProfileEdit: React.FC = () => {
         body: JSON.stringify(updatePayload)
       });
 
-      updateUserAndProfile(user, updatedProfile);
+      updateProfile(updatedProfile);
       toast.success('Profile updated successfully!');
       navigate(`/profile/${user.id}`);
     } catch (error: any) {
