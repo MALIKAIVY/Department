@@ -121,8 +121,10 @@ class YearbookEntryOut(BaseModel):
     academic_year: str
     yearbook_quote: str
     favorite_memory: Optional[str] = None
+    future_plans: Optional[str] = None
     profile_image_url: Optional[str] = None
     status: str
+    rejection_reason: Optional[str] = None
     created_at: datetime
     author_name: Optional[str] = None
 

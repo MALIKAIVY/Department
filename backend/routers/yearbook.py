@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, and_, desc
 from sqlalchemy.orm import joinedload
@@ -7,8 +7,19 @@ import datetime
 import schemas, models, database
 from core.security import get_current_user
 import uuid
+import os
 
 router = APIRouter(prefix="/yearbook", tags=["yearbook"])
+
+ALLOWED_MEDIA_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "video/mp4": ".mp4",
+    "video/webm": ".webm",
+    "video/quicktime": ".mov",
+}
+MAX_MEDIA_SIZE = 50 * 1024 * 1024
 
 @router.get("/", response_model=List[schemas.YearbookEntryOut])
 async def get_yearbook_entries(
@@ -72,6 +83,36 @@ async def get_my_entry(
     if entry:
         return schemas.YearbookEntryOut.model_validate(entry)
     return None
+
+@router.post("/media")
+async def upload_yearbook_media(
+    file: UploadFile = File(...),
+    current_user: models.Profile = Depends(get_current_user)
+):
+    if current_user.role != "student":
+        raise HTTPException(status_code=403, detail="Students only")
+
+    if file.content_type not in ALLOWED_MEDIA_TYPES:
+        raise HTTPException(status_code=400, detail="Only JPG, PNG, WebP, MP4, WebM, or MOV files are allowed")
+
+    content = await file.read()
+    if len(content) > MAX_MEDIA_SIZE:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 50MB")
+
+    upload_dir = os.path.join("uploads", "yearbook")
+    os.makedirs(upload_dir, exist_ok=True)
+
+    extension = ALLOWED_MEDIA_TYPES[file.content_type]
+    file_name = f"{current_user.id}-{uuid.uuid4()}{extension}"
+    file_path = os.path.join(upload_dir, file_name)
+
+    with open(file_path, "wb") as media_file:
+        media_file.write(content)
+
+    return {
+        "url": f"/uploads/yearbook/{file_name}",
+        "media_type": "video" if file.content_type.startswith("video/") else "image",
+    }
 
 @router.post("/", response_model=schemas.YearbookEntryOut)
 async def submit_yearbook(

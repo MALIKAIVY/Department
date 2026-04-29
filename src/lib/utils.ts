@@ -38,3 +38,15 @@ export function validateEmail(email: string): boolean {
 export function validatePassword(password: string): boolean {
   return password.length >= 8;
 }
+
+export function getBackendAssetUrl(path?: string | null): string {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  return `${apiUrl.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+export function isVideoUrl(path?: string | null): boolean {
+  return /\.(mp4|webm|mov)(\?.*)?$/i.test(path || '');
+}

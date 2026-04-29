@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../lib/stores/authStore';
-import { Calendar, Plus } from 'lucide-react';
+import { Calendar, ImagePlus, Plus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getCurrentAcademicYear, formatDate } from '../lib/utils';
+import { getBackendAssetUrl, getCurrentAcademicYear, formatDate, isVideoUrl } from '../lib/utils';
 import type { YearbookEntry } from '../lib/types';
 import { Avatar, Button, Card, EmptyState, Field, PageHeader, Select, Spinner, Textarea } from '../components/ui';
 
@@ -19,6 +19,9 @@ export const Yearbook: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
   const [showSubmitForm, setShowSubmitForm] = useState(false);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     yearbook_quote: '',
     favorite_memory: '',
@@ -55,30 +58,64 @@ export const Yearbook: React.FC = () => {
           favorite_memory: data.favorite_memory || '',
           future_plans: data.future_plans || '',
         });
+        setMediaPreview(data.profile_image_url || '');
       }
     } catch {
       console.error('Failed to fetch user entry');
     }
   };
 
+  const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      toast.error('Please choose an image or video file');
+      return;
+    }
+
+    setMediaFile(file);
+    setMediaPreview(URL.createObjectURL(file));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
 
+    setIsSubmitting(true);
     try {
-      await api.fetch('/yearbook', {
-        method: 'POST',
-        body: JSON.stringify({
-          academic_year: selectedYear,
-          ...formData
-        })
+      let mediaUrl = userEntry?.profile_image_url || '';
+
+      if (mediaFile) {
+        const uploadData = new FormData();
+        uploadData.append('file', mediaFile);
+        const uploaded = await api.fetch('/yearbook/media', {
+          method: 'POST',
+          body: uploadData,
+          headers: {},
+        });
+        mediaUrl = uploaded.url;
+      }
+
+      const payload = {
+        academic_year: selectedYear,
+        ...formData,
+        profile_image_url: mediaUrl,
+      };
+
+      await api.fetch(userEntry ? `/yearbook/${userEntry.id}` : '/yearbook', {
+        method: userEntry ? 'PUT' : 'POST',
+        body: JSON.stringify(payload),
       });
       
       toast.success(userEntry ? 'Entry updated!' : 'Entry submitted for approval!');
       setShowSubmitForm(false);
+      setMediaFile(null);
       fetchUserEntry();
     } catch (error: any) {
       toast.error(error.message || 'Failed to submit entry');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -103,6 +140,53 @@ export const Yearbook: React.FC = () => {
           </h2>
 
           <div className="space-y-4">
+            <Field label="Photo or Video">
+              <div className="space-y-3">
+                {mediaPreview && (
+                  <div className="relative overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
+                    {mediaFile?.type.startsWith('video/') || isVideoUrl(mediaPreview) ? (
+                      <video
+                        src={mediaFile ? mediaPreview : getBackendAssetUrl(mediaPreview)}
+                        className="max-h-72 w-full object-cover"
+                        controls
+                      />
+                    ) : (
+                      <img
+                        src={mediaFile ? mediaPreview : getBackendAssetUrl(mediaPreview)}
+                        alt="Yearbook media preview"
+                        className="max-h-72 w-full object-cover"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMediaFile(null);
+                        setMediaPreview('');
+                      }}
+                      className="absolute right-3 top-3 rounded-full bg-black/60 p-2 text-white transition hover:bg-black/75"
+                      aria-label="Remove selected media"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-6 text-sm font-medium text-gray-700 transition hover:border-blue-500 hover:bg-blue-50 dark:border-gray-600 dark:text-gray-300 dark:hover:border-blue-400 dark:hover:bg-blue-900/20">
+                  <ImagePlus className="h-5 w-5" />
+                  {mediaPreview ? 'Change media' : 'Add photo or video'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+                    onChange={handleMediaChange}
+                    className="hidden"
+                  />
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  JPG, PNG, WebP, MP4, WebM, or MOV up to 50MB.
+                </p>
+              </div>
+            </Field>
+
             <Field label="Yearbook Quote">
               <Textarea
                 value={formData.yearbook_quote}
@@ -151,9 +235,10 @@ export const Yearbook: React.FC = () => {
             <div className="flex gap-2">
               <Button
                 type="submit"
+                disabled={isSubmitting}
                 className="flex-1"
               >
-                {userEntry ? 'Update Entry' : 'Submit Entry'}
+                {isSubmitting ? 'Saving...' : userEntry ? 'Update Entry' : 'Submit Entry'}
               </Button>
               <Button
                 type="button"
@@ -210,11 +295,19 @@ export const Yearbook: React.FC = () => {
               className="overflow-hidden transition hover:shadow-md"
             >
               {entry.profile_image_url && (
-                <img
-                  src={entry.profile_image_url}
-                  alt="Entry"
-                  className="h-40 w-full object-cover"
-                />
+                isVideoUrl(entry.profile_image_url) ? (
+                  <video
+                    src={getBackendAssetUrl(entry.profile_image_url)}
+                    className="h-48 w-full object-cover"
+                    controls
+                  />
+                ) : (
+                  <img
+                    src={getBackendAssetUrl(entry.profile_image_url)}
+                    alt="Entry"
+                    className="h-48 w-full object-cover"
+                  />
+                )
               )}
               <div className="p-4">
                 <div className="flex items-center gap-3 mb-3">
