@@ -92,4 +92,3 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ profile });
   },
 }));
-
