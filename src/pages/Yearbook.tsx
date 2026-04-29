@@ -146,16 +146,21 @@ export const Yearbook: React.FC = () => {
             onClick={() => setShowSubmitForm(!showSubmitForm)}
           >
             <Plus className="h-5 w-5" />
-            {userEntry ? 'Edit Entry' : 'Add Entry'}
+            {userEntry ? 'Edit Photo/Video Entry' : 'Add Photo/Video Entry'}
           </Button>
         )}
       </div>
 
       {profile?.role === 'student' && showSubmitForm && (
         <Card as="form" onSubmit={handleSubmit} className="p-6">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
-            {userEntry ? 'Edit Your Yearbook Entry' : 'Create Your Yearbook Entry'}
-          </h2>
+          <div className="mb-5">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              {userEntry ? 'Edit Your Photo/Video Yearbook Entry' : 'Create Your Photo/Video Yearbook Entry'}
+            </h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Start by uploading the photo or video that should appear with your yearbook entry.
+            </p>
+          </div>
 
           <div className="space-y-4">
             <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-900/10">
