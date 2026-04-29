@@ -1,67 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Users,
-  BookOpen,
-  Briefcase,
-  BarChart3,
-  MessageSquare,
-  GraduationCap,
-} from 'lucide-react';
+import type React from 'react';
+import { GraduationCap } from 'lucide-react';
 import { UserRole } from '../lib/types';
 import { cn } from '../lib/utils';
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  roles: UserRole[];
-}
-
-const navItems: NavItem[] = [
-  {
-    label: 'Dashboard',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-    roles: ['student', 'faculty', 'alumni', 'admin'],
-  },
-  {
-    label: 'Yearbook',
-    href: '/yearbook',
-    icon: BookOpen,
-    roles: ['student', 'faculty', 'alumni', 'admin'],
-  },
-  {
-    label: 'Alumni Network',
-    href: '/alumni',
-    icon: Users,
-    roles: ['student', 'alumni'],
-  },
-  {
-    label: 'Search',
-    href: '/search',
-    icon: Briefcase,
-    roles: ['student', 'faculty', 'alumni', 'admin'],
-  },
-  {
-    label: 'Announcements',
-    href: '/announcements',
-    icon: MessageSquare,
-    roles: ['student', 'faculty', 'alumni', 'admin'],
-  },
-  {
-    label: 'Admin Panel',
-    href: '/admin',
-    icon: BarChart3,
-    roles: ['admin'],
-  },
-  {
-    label: 'Moderation',
-    href: '/admin/moderation',
-    icon: GraduationCap,
-    roles: ['faculty', 'admin'],
-  },
-];
+import { APP_FULL_NAME, APP_NAME, NAV_ITEMS } from '../lib/constants';
 
 interface SidebarProps {
   role: UserRole;
@@ -69,15 +11,14 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
   const location = useLocation();
-
-  const filteredItems = navItems.filter((item) => item.roles.includes(role));
+  const filteredItems = NAV_ITEMS.filter((item) => (item.roles as readonly UserRole[]).includes(role));
 
   return (
     <aside className="hidden w-64 flex-shrink-0 border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 md:flex md:flex-col">
       <div className="flex items-center gap-3 border-b border-gray-200 px-6 py-6 dark:border-gray-700">
         <GraduationCap className="h-8 w-8 text-blue-600 dark:text-blue-500" />
         <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">DTCY</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">{APP_NAME}</h1>
           <p className="text-xs text-gray-500 dark:text-gray-400">Tech Yearbook</p>
         </div>
       </div>
@@ -85,7 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
       <nav className="flex-1 space-y-1 px-3 py-6">
         {filteredItems.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
+          const isActive = location.pathname === item.href || location.pathname.startsWith(`${item.href}/`);
 
           return (
             <Link
@@ -106,9 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
       </nav>
 
       <div className="border-t border-gray-200 px-6 py-4 dark:border-gray-700">
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          © 2024 Digital Tech-Connect Yearbook
-        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">© 2026 {APP_FULL_NAME}</p>
       </div>
     </aside>
   );

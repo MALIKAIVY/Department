@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { useAuthStore } from '../lib/stores/authStore';
 import { Users, BookOpen, CheckCircle, AlertCircle, Zap, ChevronDown, ChevronUp, Megaphone } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Button, Card, EmptyState, Input, PageHeader, Select, Spinner, Textarea } from '../components/ui';
+import { PUBLIC_SIGNUP_ROLES } from '../lib/constants';
 
 export const Admin: React.FC = () => {
-  const { user } = useAuthStore();
   const [stats, setStats] = useState({
     totalUsers: 0,
     studentCount: 0,
@@ -55,7 +55,7 @@ export const Admin: React.FC = () => {
         totalConnections: data.userConnections || 0,
         acceptedConnections: data.userConnections || 0,
       });
-    } catch (error) {
+    } catch {
       toast.error('Failed to load stats');
     } finally {
       setIsLoading(false);
@@ -86,7 +86,7 @@ export const Admin: React.FC = () => {
       // or assume /yearbook?status=pending exists (I should check backend)
       const data = await api.fetch('/yearbook?status=pending');
       setPendingQueue(data || []);
-    } catch (err) {
+    } catch {
       toast.error('Failed to fetch pending entries');
     } finally {
       setLoadingQueue(false);
@@ -110,7 +110,7 @@ export const Admin: React.FC = () => {
       toast.success(`Entry ${status} successfully`);
       setPendingQueue((prev) => prev.filter(e => e.id !== id));
       fetchStats();
-    } catch (err) {
+    } catch {
       toast.error('Failed to moderate entry');
     }
   };
@@ -132,7 +132,7 @@ export const Admin: React.FC = () => {
       toast.success('Announcement published successfully');
       setAnnouncement({ title: '', content: '', target_roles: [] });
       setShowAnnouncement(false);
-    } catch (err) {
+    } catch {
       toast.error('Failed to publish announcement');
     } finally {
       setIsPublishing(false);
@@ -149,7 +149,7 @@ export const Admin: React.FC = () => {
   };
 
   const StatCard = ({ icon: Icon, label, value, color }: any) => (
-    <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+    <Card className="p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-600 dark:text-gray-400">{label}</p>
@@ -161,23 +161,16 @@ export const Admin: React.FC = () => {
           <Icon className="h-8 w-8 text-white" />
         </div>
       </div>
-    </div>
+    </Card>
   );
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Admin Dashboard
-        </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Manage users, content, and system operations
-        </p>
-      </div>
+      <PageHeader title="Admin Dashboard" description="Manage users, content, and system operations" />
 
       {isLoading ? (
         <div className="flex justify-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600 dark:border-gray-700 dark:border-t-blue-500"></div>
+          <Spinner className="h-12 w-12" />
         </div>
       ) : (
         <>
@@ -206,30 +199,30 @@ export const Admin: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+            <Card className="p-6">
               <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
                 <Zap className="h-6 w-6 text-yellow-600" />
                 Process Graduations
               </h2>
               <div className="flex gap-4">
-                <select
+                <Select
                   value={yearOfStudy}
                   onChange={(e) => setYearOfStudy(parseInt(e.target.value))}
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  className="w-auto"
                 >
                   {[4, 5, 6, 7].map((year) => (
                     <option key={year} value={year}>Year {year} Students</option>
                   ))}
-                </select>
-                <button
+                </Select>
+                <Button
                   onClick={processGraduations}
                   disabled={isProcessing}
-                  className="rounded-lg bg-blue-600 px-6 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                  className="px-6"
                 >
                   {isProcessing ? 'Processing...' : 'Transition to Alumni'}
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
 
             <div className="space-y-4">
               <button
@@ -244,24 +237,22 @@ export const Admin: React.FC = () => {
               </button>
 
               {showAnnouncement && (
-                <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+                <Card className="p-6">
                   <form onSubmit={handlePublishAnnouncement} className="space-y-4">
-                    <input
+                    <Input
                       type="text"
                       value={announcement.title}
                       onChange={(e) => setAnnouncement({ ...announcement, title: e.target.value })}
                       placeholder="Announcement Title"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
-                    <textarea
+                    <Textarea
                       value={announcement.content}
                       onChange={(e) => setAnnouncement({ ...announcement, content: e.target.value })}
                       placeholder="Write your announcement here..."
                       rows={4}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                     <div className="flex gap-4">
-                      {['student', 'faculty', 'alumni'].map((role) => (
+                      {PUBLIC_SIGNUP_ROLES.map((role) => (
                         <label key={role} className="flex items-center gap-2">
                           <input
                             type="checkbox"
@@ -272,11 +263,11 @@ export const Admin: React.FC = () => {
                         </label>
                       ))}
                     </div>
-                    <button type="submit" disabled={isPublishing} className="rounded-lg bg-blue-600 px-6 py-2 text-white">
+                    <Button type="submit" disabled={isPublishing} className="px-6">
                       {isPublishing ? 'Publishing...' : 'Publish'}
-                    </button>
+                    </Button>
                   </form>
-                </div>
+                </Card>
               )}
             </div>
 
@@ -290,13 +281,13 @@ export const Admin: React.FC = () => {
               </button>
 
               {showModeration && (
-                <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+                <Card className="p-6">
                   {loadingQueue ? (
                     <div className="flex justify-center p-4">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
+                      <Spinner className="h-8 w-8" />
                     </div>
                   ) : pendingQueue.length === 0 ? (
-                    <p className="dark:text-white">No pending entries to review.</p>
+                    <EmptyState description="No pending entries to review." />
                   ) : (
                     <div className="space-y-6">
                       {pendingQueue.map((entry) => (
@@ -304,14 +295,14 @@ export const Admin: React.FC = () => {
                           <h3 className="font-semibold">{entry.full_name}</h3>
                           <p className="text-sm italic">"{entry.yearbook_quote}"</p>
                           <div className="mt-4 flex gap-3">
-                            <button onClick={() => handleModerate(entry.id, 'approved')} className="bg-green-600 px-4 py-2 rounded text-white">Approve</button>
-                            <button onClick={() => handleModerate(entry.id, 'rejected')} className="bg-red-600 px-4 py-2 rounded text-white">Reject</button>
+                            <Button onClick={() => handleModerate(entry.id, 'approved')} variant="success">Approve</Button>
+                            <Button onClick={() => handleModerate(entry.id, 'rejected')} variant="danger">Reject</Button>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
-                </div>
+                </Card>
               )}
             </div>
           </div>

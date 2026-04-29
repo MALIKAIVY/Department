@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Search, Briefcase, MapPin } from 'lucide-react';
-import { getInitials } from '../lib/utils';
 import type { Alumni as AlumniType } from '../lib/types';
+import { Avatar, Button, Card, EmptyState, Field, PageHeader, Select, Spinner } from '../components/ui';
+import { INDUSTRIES } from '../lib/constants';
 
 interface AlumniWithProfile extends AlumniType {
   full_name?: string;
@@ -43,44 +44,23 @@ export const Alumni: React.FC = () => {
       }
 
       setAlumni(filtered);
-    } catch (error) {
-      console.error('Failed to fetch alumni:', error);
+    } catch {
+      console.error('Failed to fetch alumni');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const industries = [
-    'Technology',
-    'Finance',
-    'Healthcare',
-    'Education',
-    'Consulting',
-    'Government',
-    'Non-profit',
-    'Other',
-  ];
-
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Alumni Network
-        </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Connect with graduates and explore career opportunities
-        </p>
-      </div>
+      <PageHeader title="Alumni Network" description="Connect with graduates and explore career opportunities" />
 
-      <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+      <Card className="p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
           Filters
         </h2>
         <div className="grid gap-4 md:grid-cols-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Search Name
-            </label>
+          <Field label="Search Name">
             <div className="mt-2 flex items-center rounded-lg border border-gray-300 px-4 dark:border-gray-600">
               <Search className="h-5 w-5 text-gray-400" />
               <input
@@ -91,18 +71,14 @@ export const Alumni: React.FC = () => {
                 className="w-full bg-transparent py-2 pl-3 text-gray-900 placeholder-gray-500 outline-none dark:text-white dark:placeholder-gray-400"
               />
             </div>
-          </div>
+          </Field>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Graduation Year
-            </label>
-            <select
+          <Field label="Graduation Year">
+            <Select
               value={filters.graduationYear}
               onChange={(e) =>
                 setFilters({ ...filters, graduationYear: e.target.value })
               }
-              className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             >
               <option value="">All Years</option>
               {Array.from({ length: 15 }, (_, i) => {
@@ -113,64 +89,43 @@ export const Alumni: React.FC = () => {
                   {year}
                 </option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </Field>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Industry
-            </label>
-            <select
+          <Field label="Industry">
+            <Select
               value={filters.industry}
               onChange={(e) =>
                 setFilters({ ...filters, industry: e.target.value })
               }
-              className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             >
               <option value="">All Industries</option>
-              {industries.map((ind) => (
+              {INDUSTRIES.map((ind) => (
                 <option key={ind} value={ind}>
                   {ind}
                 </option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </Field>
         </div>
-      </div>
+      </Card>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-64 rounded-lg bg-gray-200 dark:bg-gray-700"
-            />
-          ))}
+        <div className="flex justify-center py-12">
+          <Spinner />
         </div>
       ) : alumni.length === 0 ? (
-        <div className="rounded-lg bg-gray-100 py-12 text-center dark:bg-gray-800">
-          <p className="text-gray-600 dark:text-gray-400">No alumni found</p>
-        </div>
+        <EmptyState description="No alumni found" />
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {alumni.map((a) => (
-            <div
+            <Card
               key={a.id}
               onClick={() => navigate(`/profile/${a.id}`)}
-              className="cursor-pointer rounded-lg bg-white p-6 shadow-sm transition hover:shadow-md dark:bg-gray-800"
+              className="cursor-pointer p-6 transition hover:shadow-md"
             >
               <div className="mb-4 flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-bold text-white">
-                  {a.avatar_url ? (
-                    <img
-                      src={a.avatar_url}
-                      alt={a.full_name}
-                      className="h-12 w-12 rounded-full"
-                    />
-                  ) : (
-                    getInitials(a.full_name || '')
-                  )}
-                </div>
+                <Avatar name={a.full_name} src={a.avatar_url} className="h-12 w-12 text-lg" />
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 dark:text-white">
                     {a.full_name}
@@ -197,16 +152,16 @@ export const Alumni: React.FC = () => {
                 </div>
               )}
 
-              <button
+              <Button
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(`/profile/${a.id}`);
                 }}
-                className="mt-4 w-full rounded-lg bg-blue-600 py-2 text-sm font-semibold text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+                className="mt-4 w-full"
               >
                 View Profile
-              </button>
-            </div>
+              </Button>
+            </Card>
           ))}
         </div>
       )}

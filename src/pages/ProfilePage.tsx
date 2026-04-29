@@ -5,7 +5,7 @@ import { useAuthStore } from '../lib/stores/authStore';
 import { useConnectionStore } from '../lib/stores/connectionStore';
 import { Linkedin, Github } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getInitials } from '../lib/utils';
+import { Avatar, Button, Card, Spinner, Textarea } from '../components/ui';
 
 export const ProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,7 +36,7 @@ export const ProfilePage: React.FC = () => {
     try {
       const data = await api.fetch(`/users/${id}`);
       setProfileUser(data);
-    } catch (error: any) {
+    } catch {
       toast.error('Profile not found');
       navigate('/dashboard');
     } finally {
@@ -82,7 +82,7 @@ export const ProfilePage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600 dark:border-gray-700 dark:border-t-blue-500"></div>
+        <Spinner className="h-12 w-12" />
       </div>
     );
   }
@@ -94,22 +94,16 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg bg-white shadow-sm dark:bg-gray-800">
+      <Card className="overflow-hidden">
         <div className="h-32 bg-gradient-to-r from-blue-400 to-blue-600"></div>
         <div className="px-6 pb-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="flex gap-4">
-              <div className="-mt-16 flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-3xl font-bold text-white shadow-lg overflow-hidden border-4 border-white dark:border-gray-800">
-                {profileUser.avatar_url ? (
-                  <img
-                    src={profileUser.avatar_url}
-                    alt={profileUser.full_name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  getInitials(profileUser.full_name)
-                )}
-              </div>
+              <Avatar
+                name={profileUser.full_name}
+                src={profileUser.avatar_url}
+                className="-mt-16 h-32 w-32 border-4 border-white text-3xl shadow-lg dark:border-gray-800"
+              />
               <div className="flex flex-col justify-end">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                   {profileUser.full_name}
@@ -125,46 +119,44 @@ export const ProfilePage: React.FC = () => {
 
             <div className="flex gap-2">
               {isOwnProfile && (
-                <button
+                <Button
                   onClick={() => navigate('/profile/edit')}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
                 >
                   Edit Profile
-                </button>
+                </Button>
               )}
 
               {!isOwnProfile && currentUserSession?.role === 'student' && profileUser.role === 'alumni' && (
                 <div>
                   {!connectionStatus ? (
                     <>
-                      <button
+                      <Button
                         onClick={() => setShowConnectionMessage(true)}
-                        className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
                       >
                         Connect
-                      </button>
+                      </Button>
                       {showConnectionMessage && (
                         <div className="mt-4 space-y-2">
-                          <textarea
+                          <Textarea
                             value={connectionMessage}
                             onChange={(e) => setConnectionMessage(e.target.value)}
                             placeholder="Send a message..."
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                             rows={3}
                           />
                           <div className="flex gap-2">
-                            <button
+                            <Button
                               onClick={handleSendRequest}
-                              className="flex-1 rounded-lg bg-blue-600 py-2 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+                              className="flex-1"
                             >
                               Send Request
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               onClick={() => setShowConnectionMessage(false)}
-                              className="flex-1 rounded-lg bg-gray-200 py-2 text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+                              variant="secondary"
+                              className="flex-1"
                             >
                               Cancel
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       )}
@@ -172,18 +164,18 @@ export const ProfilePage: React.FC = () => {
                   ) : connectionStatus.status === 'pending' &&
                     connectionStatus.receiver_id === currentUserSession?.id ? (
                     <div className="flex gap-2">
-                      <button
+                      <Button
                         onClick={() => handleRespondConnection('accepted')}
-                        className="rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+                        variant="success"
                       >
                         Accept
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => handleRespondConnection('rejected')}
-                        className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-700"
+                        variant="danger"
                       >
                         Decline
-                      </button>
+                      </Button>
                     </div>
                   ) : connectionStatus.status === 'accepted' ? (
                     <span className="rounded-lg bg-green-100 px-4 py-2 text-green-800 dark:bg-green-900/20 dark:text-green-400">
@@ -224,10 +216,10 @@ export const ProfilePage: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
+      </Card>
 
       {profileUser.role === 'student' && roleData && (
-        <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+        <Card className="p-6">
           <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
             Academic Information
           </h2>
@@ -245,11 +237,11 @@ export const ProfilePage: React.FC = () => {
               </p>
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {profileUser.role === 'faculty' && roleData && (
-        <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+        <Card className="p-6">
           <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
             Faculty Information
           </h2>
@@ -275,11 +267,11 @@ export const ProfilePage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </Card>
       )}
 
       {profileUser.role === 'alumni' && roleData && (
-        <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+        <Card className="p-6">
           <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
             Career Information
           </h2>
@@ -315,7 +307,7 @@ export const ProfilePage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

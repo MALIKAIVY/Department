@@ -70,6 +70,7 @@ export interface YearbookEntry {
   future_plans: string | null;
   profile_image_url: string | null;
   status: YearbookStatus;
+  rejection_reason?: string | null;
   author_name?: string;
   created_at: string;
 }

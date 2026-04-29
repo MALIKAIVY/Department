@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home } from 'lucide-react';
+import { Button } from '../components/ui';
 
 export const NotFound: React.FC = () => {
   const navigate = useNavigate();
@@ -15,13 +16,13 @@ export const NotFound: React.FC = () => {
         <p className="mb-8 text-gray-600 dark:text-gray-400">
           Sorry, the page you're looking for doesn't exist.
         </p>
-        <button
+        <Button
           onClick={() => navigate('/dashboard')}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+          className="px-6 py-3"
         >
           <Home className="h-5 w-5" />
           Go to Dashboard
-        </button>
+        </Button>
       </div>
     </div>
   );

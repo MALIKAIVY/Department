@@ -16,6 +16,8 @@ import { ProfileEdit } from './pages/ProfileEdit';
 import { Search } from './pages/Search';
 import { Admin } from './pages/Admin';
 import { NotFound } from './pages/NotFound';
+import { EmptyState } from './components/ui';
+import { ThemeProvider } from './lib/hooks/useTheme';
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -25,32 +27,37 @@ function App() {
   }, [checkAuth]);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        <Route
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/yearbook" element={<Yearbook />} />
-          <Route path="/alumni" element={<Alumni />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/profile/:id" element={<ProfilePage />} />
-          <Route path="/profile/edit" element={<ProfileEdit />} />
-          <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
-          <Route path="/announcements" element={<div className="text-center py-12"><h1>Announcements</h1></div>} />
-        </Route>
+          <Route
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/yearbook" element={<Yearbook />} />
+            <Route path="/alumni" element={<Alumni />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/profile/:id" element={<ProfilePage />} />
+            <Route path="/profile/edit" element={<ProfileEdit />} />
+            <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
+            <Route
+              path="/announcements"
+              element={<EmptyState title="Announcements" description="No announcements yet. Stay tuned for updates." />}
+            />
+          </Route>
 
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

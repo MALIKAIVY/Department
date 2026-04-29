@@ -76,7 +76,7 @@ export const api = {
       let errorData;
       try {
         errorData = await response.json();
-      } catch (err) {
+      } catch {
         throw new Error(`API Error: ${response.statusText}`);
       }
       throw new Error(errorData.detail || errorData.message || 'API request failed');
