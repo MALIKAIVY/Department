@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../lib/stores/authStore';
-import { Calendar, ImagePlus, Plus, X } from 'lucide-react';
+import { Calendar, Film, Image, ImagePlus, Plus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getBackendAssetUrl, getCurrentAcademicYear, formatDate, isVideoUrl } from '../lib/utils';
 import type { YearbookEntry } from '../lib/types';
@@ -12,6 +12,9 @@ interface EntryWithProfile extends YearbookEntry {
   avatar_url?: string;
 }
 
+const MAX_MEDIA_SIZE = 50 * 1024 * 1024;
+const ACCEPTED_MEDIA_TYPES = 'image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime';
+
 export const Yearbook: React.FC = () => {
   const { profile } = useAuthStore();
   const [entries, setEntries] = useState<EntryWithProfile[]>([]);
@@ -21,6 +24,7 @@ export const Yearbook: React.FC = () => {
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string>('');
+  const [isMediaRemoved, setIsMediaRemoved] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     yearbook_quote: '',
@@ -38,7 +42,7 @@ export const Yearbook: React.FC = () => {
   const fetchEntries = async () => {
     setIsLoading(true);
     try {
-      const data = await api.fetch(`/yearbook?academicYear=${selectedYear}`);
+      const data = await api.fetch(`/yearbook?academic_year=${selectedYear}`);
       setEntries(data || []);
     } catch {
       toast.error('Failed to load yearbook entries');
@@ -59,6 +63,7 @@ export const Yearbook: React.FC = () => {
           future_plans: data.future_plans || '',
         });
         setMediaPreview(data.profile_image_url || '');
+        setIsMediaRemoved(false);
       }
     } catch {
       console.error('Failed to fetch user entry');
@@ -74,8 +79,20 @@ export const Yearbook: React.FC = () => {
       return;
     }
 
+    if (file.size > MAX_MEDIA_SIZE) {
+      toast.error('Media must be 50MB or smaller');
+      return;
+    }
+
     setMediaFile(file);
     setMediaPreview(URL.createObjectURL(file));
+    setIsMediaRemoved(false);
+  };
+
+  const removeMedia = () => {
+    setMediaFile(null);
+    setMediaPreview('');
+    setIsMediaRemoved(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,7 +101,7 @@ export const Yearbook: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      let mediaUrl = userEntry?.profile_image_url || '';
+      let mediaUrl = isMediaRemoved ? '' : userEntry?.profile_image_url || '';
 
       if (mediaFile) {
         const uploadData = new FormData();
@@ -111,6 +128,7 @@ export const Yearbook: React.FC = () => {
       toast.success(userEntry ? 'Entry updated!' : 'Entry submitted for approval!');
       setShowSubmitForm(false);
       setMediaFile(null);
+      setIsMediaRemoved(false);
       fetchUserEntry();
     } catch (error: any) {
       toast.error(error.message || 'Failed to submit entry');
@@ -140,7 +158,26 @@ export const Yearbook: React.FC = () => {
           </h2>
 
           <div className="space-y-4">
-            <Field label="Photo or Video">
+            <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/50 dark:bg-blue-900/10">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Photo or Video</h3>
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                    Add the memory you want classmates to see first.
+                  </p>
+                </div>
+                <div className="flex shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                  <span className="flex items-center gap-1 px-3 py-2 text-xs">
+                    <Image className="h-4 w-4" />
+                    Photo
+                  </span>
+                  <span className="flex items-center gap-1 border-l border-gray-200 px-3 py-2 text-xs dark:border-gray-700">
+                    <Film className="h-4 w-4" />
+                    Video
+                  </span>
+                </div>
+              </div>
+
               <div className="space-y-3">
                 {mediaPreview && (
                   <div className="relative overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
@@ -159,10 +196,7 @@ export const Yearbook: React.FC = () => {
                     )}
                     <button
                       type="button"
-                      onClick={() => {
-                        setMediaFile(null);
-                        setMediaPreview('');
-                      }}
+                      onClick={removeMedia}
                       className="absolute right-3 top-3 rounded-full bg-black/60 p-2 text-white transition hover:bg-black/75"
                       aria-label="Remove selected media"
                     >
@@ -171,12 +205,15 @@ export const Yearbook: React.FC = () => {
                   </div>
                 )}
 
-                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-6 text-sm font-medium text-gray-700 transition hover:border-blue-500 hover:bg-blue-50 dark:border-gray-600 dark:text-gray-300 dark:hover:border-blue-400 dark:hover:bg-blue-900/20">
+                <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-white px-4 py-6 text-center text-sm font-medium text-gray-700 transition hover:border-blue-500 hover:bg-blue-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-blue-400 dark:hover:bg-blue-900/20">
                   <ImagePlus className="h-5 w-5" />
-                  {mediaPreview ? 'Change media' : 'Add photo or video'}
+                  <span>{mediaPreview ? 'Change photo or video' : 'Upload a photo or video'}</span>
+                  <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                    Click to choose a file from your device
+                  </span>
                   <input
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+                    accept={ACCEPTED_MEDIA_TYPES}
                     onChange={handleMediaChange}
                     className="hidden"
                   />
@@ -185,7 +222,7 @@ export const Yearbook: React.FC = () => {
                   JPG, PNG, WebP, MP4, WebM, or MOV up to 50MB.
                 </p>
               </div>
-            </Field>
+            </div>
 
             <Field label="Yearbook Quote">
               <Textarea
