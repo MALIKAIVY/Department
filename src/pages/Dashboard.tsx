@@ -216,6 +216,13 @@ export const Dashboard: React.FC = () => {
     if (role === 'alumni') {
       return [
         {
+          label: 'Review requests',
+          description: `${pendingConnections} student request${pendingConnections === 1 ? '' : 's'} waiting.`,
+          href: '/alumni/requests',
+          icon: UserPlus,
+          variant: 'success',
+        },
+        {
           label: 'Update profile',
           description: 'Keep your company, role, and links current.',
           href: '/profile/edit',
@@ -262,7 +269,7 @@ export const Dashboard: React.FC = () => {
         variant: 'secondary',
       },
     ];
-  }, [pendingQueue.length, role, stats.pendingEntries, yearbookEntry]);
+  }, [pendingConnections, pendingQueue.length, role, stats.pendingEntries, yearbookEntry]);
 
   const statCards = getStatCards(role, stats, yearbookEntry, acceptedConnections, pendingConnections, pendingQueue.length);
 
@@ -359,8 +366,6 @@ export const Dashboard: React.FC = () => {
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <RoleDetailPanel
           role={role}
-          yearbookEntry={yearbookEntry}
-          connections={connections}
           pendingQueue={pendingQueue}
           stats={stats}
         />
@@ -661,27 +666,28 @@ function FocusPanel({
           Add your current role, company, and links so students know what they can ask you about.
         </p>
       </div>
-      <Button onClick={() => onNavigate('/profile/edit')} className="mt-5 w-full">
-        Update profile
-      </Button>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <Button onClick={() => onNavigate('/alumni/requests')} className="w-full">
+          Review requests
+        </Button>
+        <Button onClick={() => onNavigate('/profile/edit')} variant="secondary" className="w-full">
+          Update profile
+        </Button>
+      </div>
     </Card>
   );
 }
 
 function RoleDetailPanel({
   role,
-  yearbookEntry,
-  connections,
   pendingQueue,
   stats,
 }: {
   role: string;
-  yearbookEntry: YearbookEntry | null;
-  connections: Connection[];
   pendingQueue: YearbookEntry[];
   stats: DashboardStats;
 }) {
-  if (role === 'student') {
+  if (role === 'student' || role === 'alumni') {
     return null;
   }
 
@@ -693,19 +699,6 @@ function RoleDetailPanel({
           <ChecklistItem done={pendingQueue.length === 0} title="Review queue" description={`${pendingQueue.length || stats.pendingEntries} entries pending.`} />
           <ChecklistItem done={false} title="Publish update" description="Share deadlines, events, or reminders." />
           <ChecklistItem done={stats.totalYearbookEntries > 0} title="Monitor yearbook" description={`${stats.totalYearbookEntries} entries are visible.`} />
-        </div>
-      </section>
-    );
-  }
-
-  if (role === 'alumni') {
-    return (
-      <section>
-        <SectionTitle title="Alumni Presence" description="Help students understand your career path." />
-        <div className="grid gap-4 md:grid-cols-3">
-          <ChecklistItem done={connections.length > 0} title="Grow network" description={`${connections.length} total connection${connections.length === 1 ? '' : 's'}.`} />
-          <ChecklistItem done={false} title="Update career info" description="Add company, role, industry, and links." />
-          <ChecklistItem done={stats.totalYearbookEntries > 0} title="Browse stories" description="See what current students are sharing." />
         </div>
       </section>
     );

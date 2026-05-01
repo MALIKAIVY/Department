@@ -14,6 +14,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Yearbook } from './pages/Yearbook';
 import { Memories } from './pages/Memories';
 import { Alumni } from './pages/Alumni';
+import { AlumniRequests } from './pages/AlumniRequests';
 import { ProfilePage } from './pages/ProfilePage';
 import { ProfileEdit } from './pages/ProfileEdit';
 import { Notifications } from './pages/Notifications';
@@ -63,6 +64,7 @@ function App() {
             <Route path="/yearbook" element={<Yearbook />} />
             <Route path="/memories" element={<Memories />} />
             <Route path="/alumni" element={<Alumni />} />
+            <Route path="/alumni/requests" element={<AlumniRequests />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/profile/:id" element={<ProfilePage />} />
             <Route path="/profile/edit" element={<ProfileEdit />} />

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
-import { Search, Briefcase, MapPin } from 'lucide-react';
+import { Search, Briefcase, MapPin, ShieldCheck, UserPlus } from 'lucide-react';
 import type { Profile } from '../lib/types';
 import { Avatar, Button, Card, EmptyState, Field, PageHeader, Select, Spinner } from '../components/ui';
 import { INDUSTRIES } from '../lib/constants';
@@ -14,6 +14,9 @@ interface AlumniCard {
   current_company?: string | null;
   current_position?: string | null;
   industry?: string | null;
+  mentorship_available?: boolean;
+  mentorship_areas?: string[];
+  open_to_connections?: boolean;
 }
 
 export const Alumni: React.FC = () => {
@@ -47,6 +50,9 @@ export const Alumni: React.FC = () => {
         current_company: profile.alumni?.current_company,
         current_position: profile.alumni?.current_position,
         industry: profile.alumni?.industry,
+        mentorship_available: profile.alumni?.mentorship_available,
+        mentorship_areas: profile.alumni?.mentorship_areas || [],
+        open_to_connections: profile.alumni?.open_to_connections,
       }));
 
       if (searchTerm) {
@@ -162,6 +168,27 @@ export const Alumni: React.FC = () => {
                   <MapPin className="h-4 w-4" />
                   <span>{a.industry}</span>
                 </div>
+              )}
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {a.open_to_connections && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Open to connect
+                  </span>
+                )}
+                {a.mentorship_available && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Mentor
+                  </span>
+                )}
+              </div>
+
+              {a.mentorship_areas && a.mentorship_areas.length > 0 && (
+                <p className="mt-3 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
+                  Helps with {a.mentorship_areas.slice(0, 3).join(', ')}
+                </p>
               )}
 
               <Button

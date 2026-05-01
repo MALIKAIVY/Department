@@ -1,6 +1,6 @@
 import React from 'react';
 import { GraduationCap, X } from 'lucide-react';
-import { cn, getInitials } from '../lib/utils';
+import { cn, getBackendAssetUrl, getInitials } from '../lib/utils';
 import { APP_FULL_NAME, APP_NAME } from '../lib/constants';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
@@ -157,7 +157,7 @@ export function Avatar({
         className
       )}
     >
-      {src ? <img src={src} alt={name || 'Avatar'} className="h-full w-full object-cover" /> : getInitials(name || '')}
+      {src ? <img src={getBackendAssetUrl(src)} alt={name || 'Avatar'} className="h-full w-full object-cover" /> : getInitials(name || '')}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { Sidebar } from './Sidebar';
@@ -8,6 +8,7 @@ import { Spinner } from './ui';
 
 export const Layout: React.FC = () => {
   const { isLoading, isAuthenticated, profile, user } = useAuthStore();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -31,9 +32,9 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white">
-      <Sidebar role={user!.role} />
+      <Sidebar role={user!.role} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Navbar />
+        <Navbar onOpenSidebar={() => setIsSidebarOpen(true)} />
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
             <Outlet />

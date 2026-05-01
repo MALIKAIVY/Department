@@ -60,9 +60,15 @@ class AlumniProfile(BaseModel):
     alumni_id: str
     graduation_year: int
     degree_earned: Optional[str] = None
+    current_position: Optional[str] = None
     current_job_title: Optional[str] = None
     current_company: Optional[str] = None
     industry: Optional[str] = None
+    mentorship_available: bool = False
+    mentorship_areas: Optional[List[str]] = []
+    open_to_connections: bool = True
+    preferred_contact_method: Optional[str] = "internal"
+    public_contact_email: Optional[str] = None
     is_visible: bool = True
     linkedin_url: Optional[str] = None
     github_url: Optional[str] = None
@@ -177,7 +183,8 @@ class YearbookEntryCreate(YearbookCreate):
 
 class YearbookEntryOut(YearbookEntryBase):
     id: uuid.UUID
-    submitted_by: uuid.UUID
+    user_id: uuid.UUID
+    submitted_by: Optional[uuid.UUID] = None
     author_name: Optional[str] = None
     author_role: Optional[str] = None
     profile_image_url: Optional[str] = None

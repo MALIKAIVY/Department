@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, or_, and_
+from sqlalchemy import select, update, delete, or_, and_, desc
 from sqlalchemy.orm import joinedload
 from typing import List, Optional
 import schemas, models, database
@@ -8,6 +8,26 @@ from core.security import get_current_user
 import uuid
 
 router = APIRouter(prefix="/connections", tags=["connections"])
+
+async def profile_avatar_url(db: AsyncSession, profile: models.Profile):
+    if profile.avatar_url:
+        return profile.avatar_url
+
+    result = await db.execute(
+        select(models.YearbookEntry.profile_image_url)
+        .where(
+            models.YearbookEntry.user_id == profile.id,
+            models.YearbookEntry.profile_image_url.is_not(None),
+            models.YearbookEntry.profile_image_url != "",
+            or_(
+                models.YearbookEntry.media_type.is_(None),
+                models.YearbookEntry.media_type == "image",
+            ),
+        )
+        .order_by(desc(models.YearbookEntry.created_at))
+        .limit(1)
+    )
+    return result.scalar()
 
 @router.get("/", response_model=List[dict])
 async def get_connections(
@@ -35,6 +55,7 @@ async def get_connections(
     for conn in connections:
         is_requester = (conn.requester_id == current_user.id)
         other_user = conn.receiver if is_requester else conn.requester
+        other_avatar_url = await profile_avatar_url(db, other_user)
         
         out.append({
             "id": conn.id,
@@ -42,10 +63,11 @@ async def get_connections(
             "receiver_id": conn.receiver_id,
             "status": conn.status,
             "message": conn.message,
+            "response_message": conn.response_message,
             "other_user": {
                 "id": other_user.id,
                 "full_name": other_user.full_name,
-                "avatar_url": other_user.avatar_url,
+                "avatar_url": other_avatar_url,
                 "role": other_user.role
             },
             "is_requester": is_requester,
@@ -75,16 +97,18 @@ async def get_connection_status(
 
     is_requester = conn.requester_id == current_user.id
     other_user = conn.receiver if is_requester else conn.requester
+    other_avatar_url = await profile_avatar_url(db, other_user)
     return {
         "id": conn.id,
         "requester_id": conn.requester_id,
         "receiver_id": conn.receiver_id,
         "status": conn.status,
         "message": conn.message,
+        "response_message": conn.response_message,
         "other_user": {
             "id": other_user.id,
             "full_name": other_user.full_name,
-            "avatar_url": other_user.avatar_url,
+            "avatar_url": other_avatar_url,
             "role": other_user.role,
         },
         "is_requester": is_requester,
@@ -106,6 +130,12 @@ async def request_connection(
     receiver = res.scalars().first()
     if not receiver:
         raise HTTPException(status_code=404, detail="User not found")
+
+    if current_user.role == "student" and receiver.role == "alumni":
+        alumni_res = await db.execute(select(models.Alumni).where(models.Alumni.id == receiver_id))
+        alumni = alumni_res.scalars().first()
+        if alumni and not alumni.open_to_connections:
+            raise HTTPException(status_code=400, detail="This alumni is not currently open to student connection requests")
         
     # Check existing
     stmt = select(models.Connection).where(
@@ -186,11 +216,17 @@ async def update_connection_status(
         raise HTTPException(status_code=400, detail="Connection not in pending state")
 
     conn.status = status_value
+    response_message = (payload.get("response_message") or "").strip()
+    conn.response_message = response_message or None
+    notification_message = f"{current_user.full_name} {status_value} your connection request."
+    if response_message:
+        notification_message = f"{notification_message} Reply: {response_message}"
+
     db.add(models.Notification(
         user_id=conn.requester_id,
         type=f"connection_{status_value}",
         title=f"Connection {status_value}",
-        message=f"{current_user.full_name} {status_value} your connection request.",
+        message=notification_message,
         link=f"/profile/{current_user.id}",
     ))
     await db.commit()

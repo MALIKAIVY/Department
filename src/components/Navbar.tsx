@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, LogOut, Settings, Search, Moon, Sun } from 'lucide-react';
+import { Bell, LogOut, Settings, Search, Moon, Sun, Menu } from 'lucide-react';
 import { useAuthStore } from '../lib/stores/authStore';
 import { Avatar, Button } from './ui';
 import { useTheme } from '../lib/hooks/useTheme';
 import { api } from '../lib/api';
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  onOpenSidebar?: () => void;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ onOpenSidebar }) => {
   const navigate = useNavigate();
   const { profile, signOut } = useAuthStore();
   const { isDark, toggleTheme } = useTheme();
@@ -34,7 +38,16 @@ export const Navbar: React.FC = () => {
   return (
     <nav className="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex flex-1 items-center">
+        <div className="flex flex-1 items-center gap-3">
+          <Button
+            onClick={onOpenSidebar}
+            variant="ghost"
+            className="h-12 w-12 p-0 md:hidden"
+            aria-label="Open navigation menu"
+          >
+            <Menu className="h-8 w-8" />
+          </Button>
+
           <div className="hidden md:flex md:flex-1">
             <div className="relative w-96">
               <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -51,12 +64,12 @@ export const Navbar: React.FC = () => {
           <Button
             onClick={() => navigate('/notifications')}
             variant="ghost"
-            className="relative h-10 w-10 p-0"
+            className="relative h-12 w-12 p-0"
             aria-label="Notifications"
           >
-            <Bell className="h-5 w-5" />
+            <Bell className="h-7 w-7" />
             {unreadCount > 0 && (
-              <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-600 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
+              <span className="absolute right-0 top-0 min-w-5 rounded-full bg-red-600 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -65,10 +78,10 @@ export const Navbar: React.FC = () => {
           <Button
             onClick={toggleTheme}
             variant="ghost"
-            className="h-10 w-10 p-0"
+            className="h-12 w-12 p-0"
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {isDark ? <Sun className="h-7 w-7" /> : <Moon className="h-7 w-7" />}
           </Button>
 
           <div className="relative">

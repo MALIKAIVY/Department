@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, func, and_, or_
+from sqlalchemy import select, update, delete, func, and_, or_, any_
 from sqlalchemy.orm import joinedload
 from typing import List, Optional
 import schemas, models, database
@@ -38,8 +38,8 @@ async def get_announcements(
             and_(
                 models.Announcement.is_published == True,
                 or_(
-                    models.Announcement.target_roles == [],
-                    models.Announcement.target_roles.contains([current_user.role])
+                    func.coalesce(func.cardinality(models.Announcement.target_roles), 0) == 0,
+                    current_user.role == any_(models.Announcement.target_roles)
                 )
             )
         )
@@ -50,7 +50,7 @@ async def get_announcements(
     out = []
     for ann in announcements:
         item = schemas.AnnouncementOut.model_validate(ann)
-        item.author_name = ann.author.full_name
+        item.author_name = ann.author.full_name if ann.author else "Department Admin"
         out.append(item)
     return out
 

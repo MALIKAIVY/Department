@@ -43,6 +43,12 @@ export interface AlumniData {
   industry?: string | null;
   linkedin_url?: string | null;
   github_url?: string | null;
+  portfolio_url?: string | null;
+  mentorship_available?: boolean;
+  mentorship_areas?: string[];
+  open_to_connections?: boolean;
+  preferred_contact_method?: string | null;
+  public_contact_email?: string | null;
   is_visible?: boolean;
 }
 
@@ -119,6 +125,7 @@ export interface Connection {
   receiver_id?: string;
   status: ConnectionStatus;
   message?: string;
+  response_message?: string | null;
   other_user: {
     id: string;
     full_name: string;

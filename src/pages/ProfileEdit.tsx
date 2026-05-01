@@ -178,6 +178,89 @@ export const ProfileEdit: React.FC = () => {
                   }
                 />
               </Field>
+              <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-5 dark:border-blue-900/40 dark:bg-blue-950/20">
+                <h2 className="text-lg font-semibold text-gray-950 dark:text-white">Networking Preferences</h2>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  Choose how students can discover and contact you.
+                </p>
+
+                <div className="mt-5 space-y-5">
+                  <label className="flex items-start gap-3 rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(formData.alumni?.open_to_connections)}
+                      onChange={(e) =>
+                        setFormData({ ...formData, alumni: { ...formData.alumni, open_to_connections: e.target.checked } })
+                      }
+                      className="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span>
+                      <span className="block font-semibold text-gray-900 dark:text-white">Open to student connection requests</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Students can send you a request from your alumni profile.</span>
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-3 rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(formData.alumni?.mentorship_available)}
+                      onChange={(e) =>
+                        setFormData({ ...formData, alumni: { ...formData.alumni, mentorship_available: e.target.checked } })
+                      }
+                      className="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span>
+                      <span className="block font-semibold text-gray-900 dark:text-white">Available for mentorship</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Show a mentor badge in the alumni directory.</span>
+                    </span>
+                  </label>
+
+                  <Field label="Mentorship Areas">
+                    <Input
+                      type="text"
+                      value={(formData.alumni?.mentorship_areas || []).join(', ')}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          alumni: {
+                            ...formData.alumni,
+                            mentorship_areas: e.target.value
+                              .split(',')
+                              .map((area) => area.trim())
+                              .filter(Boolean),
+                          },
+                        })
+                      }
+                      placeholder="Career advice, interviews, internships"
+                    />
+                  </Field>
+
+                  <Field label="Preferred Contact Method">
+                    <select
+                      value={formData.alumni?.preferred_contact_method || 'internal'}
+                      onChange={(e) =>
+                        setFormData({ ...formData, alumni: { ...formData.alumni, preferred_contact_method: e.target.value } })
+                      }
+                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    >
+                      <option value="internal">Internal request first</option>
+                      <option value="email">Email</option>
+                      <option value="linkedin">LinkedIn</option>
+                    </select>
+                  </Field>
+
+                  <Field label="Public Contact Email">
+                    <Input
+                      type="email"
+                      value={formData.alumni?.public_contact_email || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, alumni: { ...formData.alumni, public_contact_email: e.target.value } })
+                      }
+                      placeholder="Only visible when you are open to connections"
+                    />
+                  </Field>
+                </div>
+              </div>
             </>
           )}
 

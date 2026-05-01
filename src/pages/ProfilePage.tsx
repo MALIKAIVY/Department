@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuthStore } from '../lib/stores/authStore';
 import { useConnectionStore } from '../lib/stores/connectionStore';
-import { Briefcase, CalendarDays, GraduationCap, Linkedin, Github, Mail } from 'lucide-react';
+import { Briefcase, CalendarDays, GraduationCap, Linkedin, Github, Mail, UserPlus, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Avatar, Button, Card, Spinner, Textarea } from '../components/ui';
 import type { Profile } from '../lib/types';
@@ -136,7 +136,11 @@ export const ProfilePage: React.FC = () => {
 
               {!isOwnProfile && currentUserSession?.role === 'student' && profileUser.role === 'alumni' && (
                 <div>
-                  {!connectionStatus ? (
+                  {!profileUser.alumni?.open_to_connections ? (
+                    <span className="rounded-lg bg-gray-100 px-4 py-2 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                      Not open to requests
+                    </span>
+                  ) : !connectionStatus ? (
                     <>
                       <Button
                         onClick={() => setShowConnectionMessage(true)}
@@ -144,24 +148,25 @@ export const ProfilePage: React.FC = () => {
                         Connect
                       </Button>
                       {showConnectionMessage && (
-                        <div className="mt-4 space-y-2">
+                        <div className="mt-4 w-full min-w-[280px] max-w-sm space-y-3 rounded-lg border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-800">
                           <Textarea
                             value={connectionMessage}
                             onChange={(e) => setConnectionMessage(e.target.value)}
                             placeholder="Send a message..."
-                            rows={3}
+                            rows={4}
+                            className="min-h-28 resize-y"
                           />
-                          <div className="flex gap-2">
+                          <div className="grid grid-cols-2 gap-3">
                             <Button
                               onClick={handleSendRequest}
-                              className="flex-1"
+                              className="h-11 w-full whitespace-nowrap"
                             >
                               Send Request
                             </Button>
                             <Button
                               onClick={() => setShowConnectionMessage(false)}
                               variant="secondary"
-                              className="flex-1"
+                              className="h-11 w-full whitespace-nowrap"
                             >
                               Cancel
                             </Button>
@@ -282,27 +287,93 @@ export const ProfilePage: React.FC = () => {
       )}
 
       {profileUser.role === 'alumni' && roleData && (
-        <Card className="p-6">
-          <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
-            <CalendarDays className="h-5 w-5 text-blue-600" />
-            Career Information
-          </h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <InfoItem label="Graduation Year" value={roleData.graduation_year} />
-            <InfoItem label="Degree" value={roleData.degree_earned} />
-            {roleData.current_company && (
-              <>
-                <InfoItem label="Company" value={roleData.current_company} />
-                <InfoItem label="Position" value={roleData.current_position || 'Not listed'} />
-              </>
+        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+          <Card className="p-6">
+            <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
+              <CalendarDays className="h-5 w-5 text-blue-600" />
+              Career Information
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <InfoItem label="Graduation Year" value={roleData.graduation_year} />
+              <InfoItem label="Degree" value={roleData.degree_earned} />
+              {roleData.current_company && (
+                <>
+                  <InfoItem label="Company" value={roleData.current_company} />
+                  <InfoItem label="Position" value={roleData.current_position || 'Not listed'} />
+                </>
+              )}
+              {roleData.industry && <InfoItem label="Industry" value={roleData.industry} />}
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
+              <UserPlus className="h-5 w-5 text-emerald-600" />
+              Networking
+            </h2>
+            <div className="space-y-3">
+              {roleData.open_to_connections ? (
+                <Badge icon={UserPlus} text="Open to student connections" tone="emerald" />
+              ) : (
+                <Badge icon={UserPlus} text="Not accepting requests now" tone="gray" />
+              )}
+              {roleData.mentorship_available && <Badge icon={ShieldCheck} text="Available for mentorship" tone="blue" />}
+            </div>
+
+            {roleData.mentorship_areas?.length > 0 && (
+              <div className="mt-5">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">Can help with</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {roleData.mentorship_areas.map((area: string) => (
+                    <span key={area} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                      {area}
+                    </span>
+                  ))}
+                </div>
+              </div>
             )}
-            {roleData.industry && <InfoItem label="Industry" value={roleData.industry} />}
-          </div>
-        </Card>
+
+            {roleData.open_to_connections && (
+              <div className="mt-5 space-y-3 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/40">
+                <InfoItem label="Preferred Contact" value={formatContactMethod(roleData.preferred_contact_method)} />
+                {roleData.public_contact_email && <InfoItem label="Contact Email" value={roleData.public_contact_email} />}
+              </div>
+            )}
+          </Card>
+        </div>
       )}
     </div>
   );
 };
+
+function Badge({
+  icon: Icon,
+  text,
+  tone,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  text: string;
+  tone: 'blue' | 'emerald' | 'gray';
+}) {
+  const toneClass = {
+    blue: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    emerald: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    gray: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  }[tone];
+
+  return (
+    <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold ${toneClass}`}>
+      <Icon className="h-4 w-4" />
+      {text}
+    </span>
+  );
+}
+
+function formatContactMethod(method?: string | null) {
+  if (method === 'email') return 'Email';
+  if (method === 'linkedin') return 'LinkedIn';
+  return 'Internal request first';
+}
 
 function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, or_, func
+from sqlalchemy import select, update, delete, or_, func, desc
 from sqlalchemy.orm import joinedload
 from typing import List, Optional
 import schemas, models, database
@@ -10,6 +10,32 @@ from datetime import datetime
 import os
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+async def apply_yearbook_avatar(db: AsyncSession, profile: models.Profile | None):
+    if not profile or profile.avatar_url:
+        return profile
+
+    result = await db.execute(
+        select(models.YearbookEntry.profile_image_url)
+        .where(
+            models.YearbookEntry.user_id == profile.id,
+            models.YearbookEntry.profile_image_url.is_not(None),
+            models.YearbookEntry.profile_image_url != "",
+            or_(
+                models.YearbookEntry.media_type.is_(None),
+                models.YearbookEntry.media_type == "image",
+            ),
+        )
+        .order_by(desc(models.YearbookEntry.created_at))
+        .limit(1)
+    )
+    profile.avatar_url = result.scalar()
+    return profile
+
+async def apply_yearbook_avatars(db: AsyncSession, profiles: List[models.Profile]):
+    for profile in profiles:
+        await apply_yearbook_avatar(db, profile)
+    return profiles
 
 @router.get("/public/overview")
 async def get_public_overview(db: AsyncSession = Depends(database.get_db)):
@@ -82,7 +108,7 @@ async def get_my_profile(
         joinedload(models.Profile.alumni)
     )
     result = await db.execute(stmt)
-    return result.unique().scalars().first()
+    return await apply_yearbook_avatar(db, result.unique().scalars().first())
 
 @router.put("/me", response_model=schemas.ProfileBase)
 async def update_my_profile(
@@ -137,7 +163,7 @@ async def update_my_profile(
         joinedload(models.Profile.alumni)
     )
     result = await db.execute(stmt)
-    return result.unique().scalars().first()
+    return await apply_yearbook_avatar(db, result.unique().scalars().first())
 
 @router.post("/avatar")
 async def upload_avatar(
@@ -194,7 +220,7 @@ async def search_profiles(
         stmt = stmt.where(models.Profile.role == role)
         
     result = await db.execute(stmt)
-    return result.unique().scalars().all()
+    return await apply_yearbook_avatars(db, result.unique().scalars().all())
 
 @router.get("/stats", response_model=schemas.DashboardStats)
 async def get_stats(
@@ -260,6 +286,7 @@ async def list_alumni(
             models.Profile.role == "alumni",
             models.Profile.is_active == True,
             models.Alumni.is_visible == True,
+            models.Profile.id != current_user.id,
         )
         .options(
             joinedload(models.Profile.student),
@@ -275,7 +302,7 @@ async def list_alumni(
         stmt = stmt.where(models.Alumni.industry == industry)
 
     result = await db.execute(stmt)
-    return result.unique().scalars().all()
+    return await apply_yearbook_avatars(db, result.unique().scalars().all())
 
 @router.post("/graduate", response_model=schemas.GraduationResult)
 async def graduate_students(
@@ -387,4 +414,4 @@ async def get_public_profile(
     user = result.unique().scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+    return await apply_yearbook_avatar(db, user)

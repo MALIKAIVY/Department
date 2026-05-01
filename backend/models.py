@@ -79,6 +79,11 @@ class Alumni(Base):
     linkedin_url = Column(String)
     github_url = Column(String)
     portfolio_url = Column(String)
+    mentorship_available = Column(Boolean, default=False)
+    mentorship_areas = Column(ARRAY(String), default=[])
+    open_to_connections = Column(Boolean, default=True)
+    preferred_contact_method = Column(String, default="internal")
+    public_contact_email = Column(String)
     is_visible = Column(Boolean, default=True)
     last_active = Column(DateTime(timezone=True), default=datetime.utcnow)
 
@@ -137,6 +142,7 @@ class Connection(Base):
     receiver_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False)
     status = Column(String, default="pending")
     message = Column(String)
+    response_message = Column(Text)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -53,6 +53,7 @@ async def get_yearbook_entries(
         if role and entry.author.role != role:
             continue
         item = schemas.YearbookEntryOut.model_validate(entry)
+        item.submitted_by = entry.user_id
         item.author_name = entry.author.full_name
         item.author_role = entry.author.role
         item.profile_image_url = entry.profile_image_url or entry.author.avatar_url
@@ -78,6 +79,7 @@ async def get_pending_entries(
     out = []
     for entry in entries:
         item = schemas.YearbookEntryOut.model_validate(entry)
+        item.submitted_by = entry.user_id
         item.author_name = entry.author.full_name
         item.author_role = entry.author.role
         out.append(item)
@@ -92,7 +94,9 @@ async def get_my_entry(
     result = await db.execute(stmt)
     entry = result.scalars().first()
     if entry:
-        return schemas.YearbookEntryOut.model_validate(entry)
+        item = schemas.YearbookEntryOut.model_validate(entry)
+        item.submitted_by = entry.user_id
+        return item
     return None
 
 @router.post("/media")
@@ -304,7 +308,9 @@ async def submit_yearbook(
     )
     db.add(new_entry)
     await db.commit()
-    return schemas.YearbookEntryOut.model_validate(new_entry)
+    item = schemas.YearbookEntryOut.model_validate(new_entry)
+    item.submitted_by = new_entry.user_id
+    return item
 
 @router.put("/{entry_id}", response_model=schemas.YearbookEntryOut)
 async def edit_my_entry(
@@ -331,7 +337,9 @@ async def edit_my_entry(
     entry.profile_image_url = entry_in.profile_image_url
     
     await db.commit()
-    return schemas.YearbookEntryOut.model_validate(entry)
+    item = schemas.YearbookEntryOut.model_validate(entry)
+    item.submitted_by = entry.user_id
+    return item
 
 @router.delete("/{entry_id}")
 async def delete_my_entry(
@@ -404,4 +412,6 @@ async def update_entry_status(
         ))
 
     await db.commit()
-    return schemas.YearbookEntryOut.model_validate(entry)
+    item = schemas.YearbookEntryOut.model_validate(entry)
+    item.submitted_by = entry.user_id
+    return item
