@@ -66,8 +66,8 @@ async def get_pending_entries(
     db: AsyncSession = Depends(database.get_db), 
     current_user: models.Profile = Depends(get_current_user)
 ):
-    if current_user.role not in ["admin", "faculty"]:
-        raise HTTPException(status_code=403, detail="Faculty/Admin only")
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
         
     stmt = select(models.YearbookEntry).where(models.YearbookEntry.status == "pending").options(
         joinedload(models.YearbookEntry.author)
@@ -196,8 +196,8 @@ async def get_pending_memories(
     db: AsyncSession = Depends(database.get_db),
     current_user: models.Profile = Depends(get_current_user)
 ):
-    if current_user.role not in ["admin", "faculty"]:
-        raise HTTPException(status_code=403, detail="Faculty/Admin only")
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
 
     stmt = select(models.MemorySubmission).where(models.MemorySubmission.status == "pending").options(
         joinedload(models.MemorySubmission.author)
@@ -247,7 +247,7 @@ async def update_memory_status(
     db: AsyncSession = Depends(database.get_db),
     current_user: models.Profile = Depends(get_current_user)
 ):
-    if current_user.role not in ["admin", "faculty"]:
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
 
     result = await db.execute(select(models.MemorySubmission).where(models.MemorySubmission.id == memory_id).options(
@@ -369,7 +369,7 @@ async def update_entry_status(
     db: AsyncSession = Depends(database.get_db), 
     current_user: models.Profile = Depends(get_current_user)
 ):
-    if current_user.role not in ["admin", "faculty"]:
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
         
     stmt = select(models.YearbookEntry).where(models.YearbookEntry.id == entry_id)

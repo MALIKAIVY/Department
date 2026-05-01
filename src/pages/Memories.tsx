@@ -5,7 +5,7 @@ import { ArrowLeft, Calendar, ImagePlus, MessageSquare, Plus, Search, X, Users, 
 import toast from 'react-hot-toast';
 import { getBackendAssetUrl, getCurrentAcademicYear, formatDate, isVideoUrl } from '../lib/utils';
 import type { MemorySubmission } from '../lib/types';
-import { Button, Card, EmptyState, Field, Input, PageHeader, Select, Spinner, Textarea, Modal } from '../components/ui';
+import { Button, Card, EmptyState, Input, PageHeader, Select, Spinner, Textarea, Modal } from '../components/ui';
 
 const MAX_MEDIA_SIZE = 50 * 1024 * 1024;
 const ACCEPTED_MEDIA_TYPES = 'image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime';

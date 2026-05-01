@@ -12,7 +12,6 @@ import {
   Megaphone,
   PenLine,
   Search,
-  ShieldCheck,
   Sparkles,
   UserPlus,
   Users,
@@ -55,8 +54,8 @@ const roleCopy = {
   },
   faculty: {
     eyebrow: 'Faculty workspace',
-    title: 'Guide the yearbook flow',
-    description: 'Review student submissions, publish announcements, and keep the department moving.',
+    title: 'Support students and stay connected',
+    description: 'Browse student entries, follow alumni activity, and keep your faculty profile useful.',
   },
   alumni: {
     eyebrow: 'Alumni workspace',
@@ -115,7 +114,7 @@ export const Dashboard: React.FC = () => {
           setConnections(connectionData || []);
         }
 
-        if (user?.role === 'faculty' || user?.role === 'admin') {
+        if (user?.role === 'admin') {
           const queue = await api.fetch('/yearbook/pending?limit=5').catch(() => []);
           setPendingQueue(queue || []);
         }
@@ -190,25 +189,32 @@ export const Dashboard: React.FC = () => {
     if (role === 'faculty') {
       return [
         {
-          label: 'Create announcement',
-          description: 'Post an update with optional media.',
-          href: '/admin/announcements/create',
-          icon: Megaphone,
+          label: 'Browse yearbook',
+          description: 'View student entries and department stories.',
+          href: '/yearbook',
+          icon: BookOpen,
           variant: 'success',
         },
         {
-          label: 'Review submissions',
-          description: `${pendingQueue.length || stats.pendingEntries} entries need attention.`,
-          href: '/admin',
-          icon: ShieldCheck,
+          label: 'Explore alumni',
+          description: 'Find graduates and mentorship context.',
+          href: '/alumni',
+          icon: Users,
           variant: 'primary',
         },
         {
-          label: 'Search profiles',
-          description: 'Find students, faculty, or alumni quickly.',
-          href: '/search',
-          icon: Search,
+          label: 'View announcements',
+          description: 'Read the latest department updates.',
+          href: '/announcements',
+          icon: Megaphone,
           variant: 'secondary',
+        },
+        {
+          label: 'Update profile',
+          description: 'Keep your office, links, and bio current.',
+          href: '/profile/edit',
+          icon: PenLine,
+          variant: 'primary',
         },
       ];
     }
@@ -250,26 +256,26 @@ export const Dashboard: React.FC = () => {
       {
         label: 'Create announcement',
         description: 'Publish a new department-wide update.',
-        href: '/admin/announcements/create',
+        href: '/admin/announcements',
         icon: Megaphone,
         variant: 'success',
       },
       {
         label: 'Add students',
         description: 'Manual or bulk student account creation.',
-        href: '/admin/students/manage',
+        href: '/admin/students',
         icon: UserPlus,
         variant: 'primary',
       },
       {
         label: 'Review submissions',
         description: `${stats.pendingEntries} submissions are waiting.`,
-        href: '/admin',
+        href: '/admin/moderation',
         icon: Clock,
         variant: 'secondary',
       },
     ];
-  }, [pendingConnections, pendingQueue.length, role, stats.pendingEntries, yearbookEntry]);
+  }, [pendingConnections, role, stats.pendingEntries]);
 
   const statCards = getStatCards(role, stats, yearbookEntry, acceptedConnections, pendingConnections, pendingQueue.length);
 
@@ -366,7 +372,6 @@ export const Dashboard: React.FC = () => {
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <RoleDetailPanel
           role={role}
-          pendingQueue={pendingQueue}
           stats={stats}
         />
         <AnnouncementsPanel announcements={announcements} />
@@ -419,32 +424,32 @@ function getStatCards(
   if (role === 'faculty') {
     return [
       {
-        label: 'Pending reviews',
-        value: stats.pendingEntries,
-        detail: 'Student entries awaiting approval',
-        icon: Clock,
-        tone: stats.pendingEntries > 0 ? 'amber' : 'emerald',
+        label: 'Students',
+        value: stats.totalUsers,
+        detail: 'Department members you can browse',
+        icon: Users,
+        tone: 'blue',
       },
       {
         label: 'Published entries',
         value: stats.totalYearbookEntries,
-        detail: 'Approved yearbook stories',
+        detail: 'Yearbook stories to explore',
         icon: BookOpen,
-        tone: 'blue',
+        tone: 'emerald',
       },
       {
-        label: 'Network size',
-        value: stats.totalUsers,
-        detail: 'Active department profiles',
-        icon: Users,
+        label: 'Alumni network',
+        value: stats.userConnections,
+        detail: 'Active student-alumni links',
+        icon: GraduationCap,
         tone: 'slate',
       },
       {
-        label: 'Connections',
-        value: stats.userConnections,
-        detail: 'Active student-alumni links',
+        label: 'Announcements',
+        value: 'Open',
+        detail: 'Department updates and notices',
         icon: CheckCircle,
-        tone: 'emerald',
+        tone: 'amber',
       },
     ];
   }
@@ -614,7 +619,7 @@ function FocusPanel({
     );
   }
 
-  if (role === 'faculty' || role === 'admin') {
+  if (role === 'admin') {
     return (
       <Card className="p-6">
         <div className="flex items-center gap-3">
@@ -641,9 +646,40 @@ function FocusPanel({
             </p>
           )}
         </div>
-        <Button onClick={() => onNavigate('/admin')} className="mt-5 w-full">
+        <Button onClick={() => onNavigate('/admin/moderation')} className="mt-5 w-full">
           Open review tools
         </Button>
+      </Card>
+    );
+  }
+
+  if (role === 'alumni') {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center gap-3">
+          <span className="rounded-lg bg-emerald-100 p-3 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+            <UserPlus className="h-6 w-6" />
+          </span>
+          <div>
+            <h2 className="font-semibold text-gray-950 dark:text-white">Student connections</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {pendingConnections > 0 ? `${pendingConnections} connection request${pendingConnections === 1 ? '' : 's'} pending.` : 'Keep your profile ready for students.'}
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/40">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            Add your current role, company, and links so students know what they can ask you about.
+          </p>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <Button onClick={() => onNavigate('/alumni/requests')} className="w-full">
+            Review requests
+          </Button>
+          <Button onClick={() => onNavigate('/profile/edit')} variant="secondary" className="w-full">
+            Update profile
+          </Button>
+        </div>
       </Card>
     );
   }
@@ -651,27 +687,27 @@ function FocusPanel({
   return (
     <Card className="p-6">
       <div className="flex items-center gap-3">
-        <span className="rounded-lg bg-emerald-100 p-3 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-          <UserPlus className="h-6 w-6" />
+        <span className="rounded-lg bg-blue-100 p-3 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+          <BookOpen className="h-6 w-6" />
         </span>
         <div>
-          <h2 className="font-semibold text-gray-950 dark:text-white">Student connections</h2>
+          <h2 className="font-semibold text-gray-950 dark:text-white">Faculty workspace</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {pendingConnections > 0 ? `${pendingConnections} connection request${pendingConnections === 1 ? '' : 's'} pending.` : 'Keep your profile ready for students.'}
+            Browse student stories, alumni profiles, and department updates.
           </p>
         </div>
       </div>
       <div className="mt-5 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/40">
         <p className="text-sm text-gray-700 dark:text-gray-300">
-          Add your current role, company, and links so students know what they can ask you about.
+          Admin-only actions like user management, transition processing, event management, and approvals are hidden from faculty.
         </p>
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <Button onClick={() => onNavigate('/alumni/requests')} className="w-full">
-          Review requests
+        <Button onClick={() => onNavigate('/yearbook')} className="w-full">
+          Open yearbook
         </Button>
-        <Button onClick={() => onNavigate('/profile/edit')} variant="secondary" className="w-full">
-          Update profile
+        <Button onClick={() => onNavigate('/alumni')} variant="secondary" className="w-full">
+          Browse alumni
         </Button>
       </div>
     </Card>
@@ -680,11 +716,9 @@ function FocusPanel({
 
 function RoleDetailPanel({
   role,
-  pendingQueue,
   stats,
 }: {
   role: string;
-  pendingQueue: YearbookEntry[];
   stats: DashboardStats;
 }) {
   if (role === 'student' || role === 'alumni') {
@@ -694,11 +728,11 @@ function RoleDetailPanel({
   if (role === 'faculty') {
     return (
       <section>
-        <SectionTitle title="Faculty Priorities" description="Keep student submissions and communications moving." />
+        <SectionTitle title="Faculty Content" description="Useful areas for teaching, recognition, and student discovery." />
         <div className="grid gap-4 md:grid-cols-3">
-          <ChecklistItem done={pendingQueue.length === 0} title="Review queue" description={`${pendingQueue.length || stats.pendingEntries} entries pending.`} />
-          <ChecklistItem done={false} title="Publish update" description="Share deadlines, events, or reminders." />
-          <ChecklistItem done={stats.totalYearbookEntries > 0} title="Monitor yearbook" description={`${stats.totalYearbookEntries} entries are visible.`} />
+          <ChecklistItem done={stats.totalYearbookEntries > 0} title="Yearbook stories" description={`${stats.totalYearbookEntries} student and department entries visible.`} />
+          <ChecklistItem done={stats.userConnections > 0} title="Alumni context" description={`${stats.userConnections} accepted mentorship links in the network.`} />
+          <ChecklistItem done={true} title="Profile presence" description="Keep your profile updated for students." />
         </div>
       </section>
     );

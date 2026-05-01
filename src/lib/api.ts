@@ -66,7 +66,7 @@ export const api = {
       }
 
       return new Promise((resolve, reject) => {
-        subscribeTokenRefresh((token) => {
+        subscribeTokenRefresh(() => {
           this.fetch(endpoint, options).then(resolve).catch(reject);
         });
       });

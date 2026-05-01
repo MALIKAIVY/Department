@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../lib/stores/authStore';
-import { Megaphone, Plus, Calendar, User, ChevronRight, MessageSquare, ExternalLink } from 'lucide-react';
+import { Megaphone, Plus, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, Card, EmptyState, PageHeader, Spinner } from '../components/ui';
 import { useNavigate } from 'react-router-dom';

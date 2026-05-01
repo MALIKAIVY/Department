@@ -27,7 +27,6 @@ import { Announcements } from './pages/Announcements';
 import { ManageUsers } from './pages/admin/ManageUsers';
 import { CreateAnnouncement } from './pages/admin/CreateAnnouncement';
 import { NotFound } from './pages/NotFound';
-import { EmptyState } from './components/ui';
 import { ThemeProvider } from './lib/hooks/useTheme';
 
 function App() {
@@ -56,7 +55,7 @@ function App() {
             <Route 
               path="/dashboard" 
               element={
-                user?.role === 'admin' || user?.role === 'faculty' 
+                user?.role === 'admin'
                   ? <Admin /> 
                   : <Dashboard />
               } 
@@ -70,12 +69,12 @@ function App() {
             <Route path="/profile/edit" element={<ProfileEdit />} />
             
             {/* Admin Specific Routes */}
-            <Route path="/admin/users" element={<ManageUsers />} />
-            <Route path="/admin/students" element={<ManageStudents />} />
-            <Route path="/admin/faculty" element={<ManageFaculty />} />
-            <Route path="/admin/events" element={<ManageEvents />} />
-            <Route path="/admin/announcements" element={<CreateAnnouncement />} />
-            <Route path="/admin/moderation" element={<ContentModeration />} />
+            <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><ManageUsers /></ProtectedRoute>} />
+            <Route path="/admin/students" element={<ProtectedRoute allowedRoles={['admin']}><ManageStudents /></ProtectedRoute>} />
+            <Route path="/admin/faculty" element={<ProtectedRoute allowedRoles={['admin']}><ManageFaculty /></ProtectedRoute>} />
+            <Route path="/admin/events" element={<ProtectedRoute allowedRoles={['admin']}><ManageEvents /></ProtectedRoute>} />
+            <Route path="/admin/announcements" element={<ProtectedRoute allowedRoles={['admin']}><CreateAnnouncement /></ProtectedRoute>} />
+            <Route path="/admin/moderation" element={<ProtectedRoute allowedRoles={['admin']}><ContentModeration /></ProtectedRoute>} />
 
             <Route
               path="/announcements"

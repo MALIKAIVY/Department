@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
-import { BookOpen, Heart, CheckCircle, XCircle, Eye, ChevronLeft, Calendar, User, MapPin, Tag } from 'lucide-react';
+import { Heart, CheckCircle, XCircle, Eye, ChevronLeft, Calendar, User, MapPin, Tag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, Card, EmptyState, PageHeader, Spinner, Modal } from '../../components/ui';
 import { useNavigate } from 'react-router-dom';
-import { getBackendAssetUrl, isVideoUrl, formatDate } from '../../lib/utils';
+import { getBackendAssetUrl, isVideoUrl } from '../../lib/utils';
 
 export const ContentModeration: React.FC = () => {
   const navigate = useNavigate();
@@ -81,7 +81,7 @@ export const ContentModeration: React.FC = () => {
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-          <Button variant="secondary" size="sm" onClick={() => setSelectedItem({ ...item, type })} className="w-full bg-white/20 text-white backdrop-blur-md border-white/30 hover:bg-white/40">
+          <Button variant="secondary" onClick={() => setSelectedItem({ ...item, type })} className="w-full bg-white/20 text-white backdrop-blur-md border-white/30 hover:bg-white/40">
             <Eye className="h-4 w-4 mr-2" /> View Details
           </Button>
         </div>

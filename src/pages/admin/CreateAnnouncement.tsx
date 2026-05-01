@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../../lib/api';
-import { Megaphone, ImagePlus, X, ChevronLeft } from 'lucide-react';
+import { ImagePlus, X, ChevronLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, Card, Input, PageHeader, Textarea } from '../../components/ui';
 import { useNavigate } from 'react-router-dom';

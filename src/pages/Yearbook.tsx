@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../lib/stores/authStore';
-import { Calendar, Film, Image, ImagePlus, Linkedin, Plus, Search, X, Users, GraduationCap, Filter, Eye, User, Tag } from 'lucide-react';
+import { Calendar, Film, Image, ImagePlus, Linkedin, Plus, Search, X, Users, GraduationCap, Filter, Eye, Tag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getBackendAssetUrl, getCurrentAcademicYear, isVideoUrl } from '../lib/utils';
 import type { YearbookEntry } from '../lib/types';
-import { Avatar, Button, Card, EmptyState, Field, Input, PageHeader, Select, Spinner, Textarea, Modal } from '../components/ui';
+import { Avatar, Button, Card, EmptyState, Input, PageHeader, Select, Spinner, Textarea, Modal } from '../components/ui';
 
 interface EntryWithProfile extends YearbookEntry {
   full_name?: string;

@@ -1,8 +1,6 @@
 import {
-  BarChart3,
   Bell,
   BookOpen,
-  GraduationCap,
   LayoutDashboard,
   MessageSquare,
   Users,
@@ -55,7 +53,7 @@ export const NAV_ITEMS = [
     label: 'Alumni Network',
     href: '/alumni',
     icon: Users,
-    roles: ['student', 'alumni'],
+    roles: USER_ROLES,
   },
   {
     label: 'Memories',
