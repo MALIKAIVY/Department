@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../lib/stores/authStore';
 import type { UserRole } from '../lib/types';
 import { Spinner } from './ui';
@@ -13,6 +13,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   allowedRoles = [],
 }) => {
+  const location = useLocation();
   const { isAuthenticated, profile, user, isLoading } = useAuthStore();
 
   if (isLoading) {
@@ -28,6 +29,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (!isAuthenticated || !profile) {
     return <Navigate to="/login" replace />;
+  }
+
+  const needsOnboarding = Boolean(profile.is_first_login);
+  if (needsOnboarding && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role as UserRole)) {

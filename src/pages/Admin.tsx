@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../lib/stores/authStore';
-import { Users, BookOpen, CheckCircle, AlertCircle, Zap, ChevronDown, ChevronUp, Megaphone, ImagePlus, X, UserPlus, Upload, FileSpreadsheet } from 'lucide-react';
+import { Users, BookOpen, CheckCircle, Zap, ChevronDown, ChevronUp, Megaphone, Heart, Clock, UserPlus, Building2, CalendarPlus, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Button, Card, EmptyState, Input, PageHeader, Select, Spinner, Textarea } from '../components/ui';
-import { PUBLIC_SIGNUP_ROLES } from '../lib/constants';
+import { Button, Card, EmptyState, Input, PageHeader, Select, Spinner } from '../components/ui';
+import { Link } from 'react-router-dom';
 
 export const Admin: React.FC = () => {
   const { profile } = useAuthStore();
@@ -17,48 +17,41 @@ export const Admin: React.FC = () => {
     totalYearbookEntries: 0,
     approvedEntries: 0,
     pendingEntries: 0,
+    pendingMemories: 0,
     totalConnections: 0,
     acceptedConnections: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [yearOfStudy, setYearOfStudy] = useState(4);
+  const [gradYearToProcess, setGradYearToProcess] = useState(new Date().getFullYear());
+  const [transitionConfirm, setTransitionConfirm] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const [showModeration, setShowModeration] = useState(false);
   const [pendingQueue, setPendingQueue] = useState<any[]>([]);
   const [loadingQueue, setLoadingQueue] = useState(false);
+  const [showMemoryModeration, setShowMemoryModeration] = useState(false);
+  const [pendingMemories, setPendingMemories] = useState<any[]>([]);
+  const [loadingMemories, setLoadingMemories] = useState(false);
 
-  const [showAnnouncement, setShowAnnouncement] = useState(false);
-  const [showStudentManager, setShowStudentManager] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [isCreatingStudents, setIsCreatingStudents] = useState(false);
-
-  const [announcement, setAnnouncement] = useState({
-    title: '',
-    content: '',
-    target_roles: [] as string[],
-    media_url: '',
-  });
-
-  const [manualStudent, setManualStudent] = useState({
-    email: '',
-    full_name: '',
-    student_id: '',
-    graduation_year: new Date().getFullYear() + 4,
-  });
-
-  const [announcementMedia, setAnnouncementMedia] = useState<File | null>(null);
-  const [announcementMediaPreview, setAnnouncementMediaPreview] = useState('');
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear - 2 + i);
 
   useEffect(() => {
     fetchStats();
-  }, []);
+    
+    const interval = setInterval(() => {
+      fetchStats(true);
+      if (showModeration) fetchPendingQueue(true);
+      if (showMemoryModeration) fetchPendingMemories(true);
+    }, 3000);
 
-  const fetchStats = async () => {
-    setIsLoading(true);
+    return () => clearInterval(interval);
+  }, [showModeration, showMemoryModeration]);
+
+  const fetchStats = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const data = await api.fetch('/users/stats');
-      // Backend returns full stats map for admin
       setStats({
         totalUsers: data.totalUsers || 0,
         studentCount: data.studentCount || 0,
@@ -68,44 +61,38 @@ export const Admin: React.FC = () => {
         totalYearbookEntries: data.totalYearbookEntries || 0,
         approvedEntries: (data.totalYearbookEntries || 0) - (data.pendingEntries || 0),
         pendingEntries: data.pendingEntries || 0,
+        pendingMemories: data.pendingMemories || 0,
         totalConnections: data.userConnections || 0,
         acceptedConnections: data.userConnections || 0,
       });
     } catch {
-      toast.error('Failed to load stats');
+      if (!silent) toast.error('Failed to load stats');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
-  const processGraduations = async () => {
-    setIsProcessing(true);
+  const fetchPendingQueue = async (silent = false) => {
+    if (!silent) setLoadingQueue(true);
     try {
-      await api.fetch('/users/graduate', {
-        method: 'POST',
-        body: JSON.stringify({ year_of_study: yearOfStudy })
-      });
-
-      toast.success(`Successfully transitioned students to alumni!`);
-      fetchStats();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to process graduations');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const fetchPendingQueue = async () => {
-    setLoadingQueue(true);
-    try {
-      // Use the existing yearbook endpoint with pending filter if I had one, 
-      // or assume /yearbook?status=pending exists (I should check backend)
       const data = await api.fetch('/yearbook/pending');
       setPendingQueue(data || []);
     } catch {
-      toast.error('Failed to fetch pending entries');
+      if (!silent) toast.error('Failed to fetch pending entries');
     } finally {
-      setLoadingQueue(false);
+      if (!silent) setLoadingQueue(false);
+    }
+  };
+
+  const fetchPendingMemories = async (silent = false) => {
+    if (!silent) setLoadingMemories(true);
+    try {
+      const data = await api.fetch('/yearbook/memories/pending');
+      setPendingMemories(data || []);
+    } catch {
+      if (!silent) toast.error('Failed to fetch pending memories');
+    } finally {
+      if (!silent) setLoadingMemories(false);
     }
   };
 
@@ -116,460 +103,371 @@ export const Admin: React.FC = () => {
     setShowModeration(!showModeration);
   };
 
+  const toggleMemoryModeration = () => {
+    if (!showMemoryModeration) {
+      fetchPendingMemories();
+    }
+    setShowMemoryModeration(!showMemoryModeration);
+  };
+
   const handleModerate = async (id: string, status: 'approved' | 'rejected') => {
     try {
+      const rejection_reason = status === 'rejected'
+        ? window.prompt('Reason for rejection? This will be visible to the student.')
+        : undefined;
+
+      if (status === 'rejected' && !rejection_reason) {
+        toast.error('A rejection reason is required');
+        return;
+      }
+
       await api.fetch(`/yearbook/${id}/status`, {
         method: 'PUT',
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status, rejection_reason })
       });
       
       toast.success(`Entry ${status} successfully`);
       setPendingQueue((prev) => prev.filter(e => e.id !== id));
-      fetchStats();
+      fetchStats(true);
     } catch {
       toast.error('Failed to moderate entry');
     }
   };
 
-  const handlePublishAnnouncement = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!announcement.title || !announcement.content || announcement.target_roles.length === 0) {
-      toast.error('Please fill all fields and select at least one role');
-      return;
-    }
-
-    setIsPublishing(true);
+  const handleMemoryModerate = async (id: string, status: 'approved' | 'rejected') => {
     try {
-      let media_url = '';
-      if (announcementMedia) {
-        const uploadData = new FormData();
-        uploadData.append('file', announcementMedia);
-        const uploaded = await api.fetch('/announcements/media', {
-          method: 'POST',
-          body: uploadData,
-          headers: {},
-        });
-        media_url = uploaded.url;
-      }
+      const rejection_reason = status === 'rejected'
+        ? window.prompt('Reason for rejection? This will be visible to the contributor.')
+        : undefined;
 
-      await api.fetch('/announcements', {
-        method: 'POST',
-        body: JSON.stringify({ ...announcement, media_url })
-      });
-
-      toast.success('Announcement published successfully');
-      setAnnouncement({ title: '', content: '', target_roles: [], media_url: '' });
-      setAnnouncementMedia(null);
-      setAnnouncementMediaPreview('');
-      setShowAnnouncement(false);
-      fetchStats();
-    } catch {
-      toast.error('Failed to publish announcement');
-    } finally {
-      setIsPublishing(false);
-    }
-  };
-
-  const handleAnnouncementMedia = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-      toast.error('Please choose an image or video file');
-      return;
-    }
-
-    setAnnouncementMedia(file);
-    setAnnouncementMediaPreview(URL.createObjectURL(file));
-  };
-
-  const handleRoleToggle = (role: string) => {
-    setAnnouncement((prev) => ({
-      ...prev,
-      target_roles: prev.target_roles.includes(role)
-        ? prev.target_roles.filter((r) => r !== role)
-        : [...prev.target_roles, role],
-    }));
-  };
-
-  const handleCreateStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsCreatingStudents(true);
-    try {
-      await api.fetch('/admin/students', {
-        method: 'POST',
-        body: JSON.stringify({ students: [manualStudent] })
-      });
-      toast.success('Student account created');
-      setManualStudent({
-        email: '',
-        full_name: '',
-        student_id: '',
-        graduation_year: new Date().getFullYear() + 4,
-      });
-      fetchStats();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to create student');
-    } finally {
-      setIsCreatingStudents(false);
-    }
-  };
-
-  const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const csv = event.target?.result as string;
-      const lines = csv.split('\n');
-      const students = [];
-
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        const parts = line.split(',');
-        if (parts.length >= 2) {
-          students.push({
-            email: parts[0].trim(),
-            full_name: parts[1].trim(),
-            student_id: parts[2]?.trim() || `STU-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-            graduation_year: parseInt(parts[3]?.trim()) || new Date().getFullYear() + 4,
-          });
-        }
-      }
-
-      if (students.length === 0) {
-        toast.error('No valid students found in CSV');
+      if (status === 'rejected' && !rejection_reason) {
+        toast.error('A rejection reason is required');
         return;
       }
 
-      setIsCreatingStudents(true);
-      try {
-        const results = await api.fetch('/admin/students', {
-          method: 'POST',
-          body: JSON.stringify({ students })
-        });
-        toast.success(`Successfully imported ${results.length} students`);
-        fetchStats();
-      } catch (err: any) {
-        toast.error('Bulk upload failed');
-      } finally {
-        setIsCreatingStudents(false);
-      }
-    };
-    reader.readAsText(file);
+      await api.fetch(`/yearbook/memories/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status, rejection_reason })
+      });
+
+      toast.success(`Memory ${status} successfully`);
+      setPendingMemories((prev) => prev.filter(memory => memory.id !== id));
+      fetchStats(true);
+    } catch {
+      toast.error('Failed to moderate memory');
+    }
   };
 
-  const StatCard = ({ icon: Icon, label, value, color }: any) => (
-    <Card className="p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{label}</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-            {value}
-          </p>
-        </div>
-        <div className={`rounded-full p-3 ${color}`}>
-          <Icon className="h-8 w-8 text-white" />
-        </div>
+  const processGraduations = async () => {
+    if (transitionConfirm !== 'CONFIRM') {
+      toast.error('Type CONFIRM before running the transition');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const result = await api.fetch('/users/graduate', {
+        method: 'POST',
+        body: JSON.stringify({ graduation_year: gradYearToProcess })
+      });
+
+      toast.success(`Transition complete: ${result.transitioned} students from Class of ${gradYearToProcess} are now Alumni.`);
+      setTransitionConfirm('');
+      fetchStats();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to process graduations');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const PremiumStatCard = ({ icon: Icon, label, value, subtext, iconBg }: any) => (
+    <Card className="flex items-center justify-between p-6 transition-all hover:shadow-md">
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
+        <p className="text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">{subtext}</p>
+      </div>
+      <div className={`rounded-xl p-3 ${iconBg}`}>
+        <Icon className="h-6 w-6" />
       </div>
     </Card>
   );
 
+  const QuickActionLink = ({ icon: Icon, label, to, color }: any) => (
+    <Link 
+      to={to}
+      className="flex w-full items-center justify-between rounded-2xl border border-gray-100 bg-white px-6 py-5 transition-all hover:border-gray-200 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600"
+    >
+      <div className="flex items-center gap-4">
+        <div className={`rounded-xl p-2.5 ${color}`}>
+          <Icon className="h-6 w-6 text-white" />
+        </div>
+        <span className="text-lg font-semibold text-gray-900 dark:text-white">{label}</span>
+      </div>
+      <ChevronRight className="h-6 w-6 text-gray-300" />
+    </Link>
+  );
+
   return (
     <div className="space-y-8">
-      <PageHeader title="Admin Dashboard" description="Manage users, content, and system operations" />
+      <PageHeader title="Dashboard" description="Manage users, content, and system operations" />
 
       {isLoading ? (
-        <div className="flex justify-center">
+        <div className="flex justify-center py-12">
           <Spinner className="h-12 w-12" />
         </div>
       ) : (
-        <>
-          <div className="space-y-6">
-            <div>
-              <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
-                User Statistics
-              </h2>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
-                <StatCard icon={Users} label="Total" value={stats.totalUsers} color="bg-blue-600" />
-                <StatCard icon={Users} label="Students" value={stats.studentCount} color="bg-green-600" />
-                <StatCard icon={Users} label="Faculty" value={stats.facultyCount} color="bg-purple-600" />
-                <StatCard icon={Users} label="Alumni" value={stats.alumniCount} color="bg-orange-600" />
-                <StatCard icon={Users} label="Admins" value={stats.adminCount} color="bg-red-600" />
-              </div>
-            </div>
+        <div className="space-y-10">
+          {/* Main Priority Stats */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <PremiumStatCard 
+              icon={Users} 
+              label="Total users" 
+              value={stats.totalUsers} 
+              subtext="Active profiles in the system"
+              iconBg="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+            />
+            <PremiumStatCard 
+              icon={BookOpen} 
+              label="Yearbook entries" 
+              value={stats.approvedEntries} 
+              subtext="Approved and visible stories"
+              iconBg="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
+            />
+            <PremiumStatCard 
+              icon={Clock} 
+              label="Pending approval" 
+              value={stats.pendingEntries + stats.pendingMemories} 
+              subtext="Needs moderation"
+              iconBg="bg-gray-50 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400"
+            />
+            <PremiumStatCard 
+              icon={CheckCircle} 
+              label="Connections" 
+              value={stats.acceptedConnections} 
+              subtext="Accepted mentorship links"
+              iconBg="bg-gray-50 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400"
+            />
+          </div>
 
-            <div>
-              <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
-                Yearbook Statistics
-              </h2>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <StatCard icon={BookOpen} label="Total Entries" value={stats.totalYearbookEntries} color="bg-blue-600" />
-                <StatCard icon={CheckCircle} label="Approved" value={stats.approvedEntries} color="bg-green-600" />
-                <StatCard icon={AlertCircle} label="Pending" value={stats.pendingEntries} color="bg-yellow-600" />
-              </div>
-            </div>
-
-            {profile?.role === 'admin' && (
-              <Card className="p-6">
-                <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
-                  <Zap className="h-6 w-6 text-yellow-600" />
-                  Process Graduations
-                </h2>
-                <div className="flex gap-4">
-                  <Select
-                    value={yearOfStudy}
-                    onChange={(e) => setYearOfStudy(parseInt(e.target.value))}
-                    className="w-auto"
-                  >
-                    {[4, 5, 6, 7].map((year) => (
-                      <option key={year} value={year}>Year {year} Students</option>
-                    ))}
-                  </Select>
-                  <Button
-                    onClick={processGraduations}
-                    disabled={isProcessing}
-                    className="px-6"
-                  >
-                    {isProcessing ? 'Processing...' : 'Transition to Alumni'}
-                  </Button>
-                </div>
-              </Card>
-            )}
-
-            {profile?.role === 'admin' && (
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-10">
+              {/* Quick Actions */}
               <div className="space-y-4">
-                <button
-                  onClick={() => setShowStudentManager(!showStudentManager)}
-                  className="flex w-full items-center justify-between rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-6 py-4 dark:bg-gray-800 dark:border-gray-600"
-                >
-                  <span className="flex items-center gap-2">
-                    <UserPlus className="h-5 w-5 text-green-600" />
-                    Manage Students (Add Manual/Bulk)
-                  </span>
-                  {showStudentManager ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                </button>
-
-                {showStudentManager && (
-                  <Card className="p-6">
-                    <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                      {/* Manual Entry */}
-                      <div className="space-y-4">
-                        <h3 className="flex items-center gap-2 font-semibold text-gray-900 dark:text-white">
-                          <UserPlus className="h-5 w-5 text-blue-600" />
-                          Manual Student Entry
-                        </h3>
-                        <form onSubmit={handleCreateStudent} className="space-y-3">
-                          <Input
-                            placeholder="Full Name"
-                            value={manualStudent.full_name}
-                            onChange={(e) => setManualStudent({ ...manualStudent, full_name: e.target.value })}
-                            required
-                          />
-                          <Input
-                            type="email"
-                            placeholder="Email Address"
-                            value={manualStudent.email}
-                            onChange={(e) => setManualStudent({ ...manualStudent, email: e.target.value })}
-                            required
-                          />
-                          <div className="grid grid-cols-2 gap-3">
-                            <Input
-                              placeholder="Student ID"
-                              value={manualStudent.student_id}
-                              onChange={(e) => setManualStudent({ ...manualStudent, student_id: e.target.value })}
-                              required
-                            />
-                            <Input
-                              type="number"
-                              placeholder="Grad Year"
-                              value={manualStudent.graduation_year}
-                              onChange={(e) => setManualStudent({ ...manualStudent, graduation_year: parseInt(e.target.value) })}
-                              required
-                            />
-                          </div>
-                          <Button type="submit" disabled={isCreatingStudents} className="w-full">
-                            {isCreatingStudents ? 'Creating...' : 'Create Account'}
-                          </Button>
-                        </form>
-                      </div>
-
-                      {/* Bulk Upload */}
-                      <div className="flex flex-col space-y-4 border-l pl-8 dark:border-gray-700">
-                        <h3 className="flex items-center gap-2 font-semibold text-gray-900 dark:text-white">
-                          <Upload className="h-5 w-5 text-purple-600" />
-                          Bulk CSV Import
-                        </h3>
-                        <div className="flex flex-1 flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-6 text-center dark:border-gray-700 dark:bg-gray-900/50">
-                          <FileSpreadsheet className="mb-3 h-10 w-10 text-gray-400" />
-                          <p className="mb-1 text-sm font-medium text-gray-900 dark:text-white">Upload CSV File</p>
-                          <p className="mb-4 text-xs text-gray-500">Format: email, name, id, grad_year</p>
-                          <label className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                            Select File
-                            <input type="file" accept=".csv" onChange={handleBulkUpload} className="hidden" />
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                )}
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Quick Management Actions
+                </h2>
+                <div className="space-y-3">
+                  <QuickActionLink 
+                    icon={UserPlus} 
+                    label="Manage Students (Add Manual/Bulk)" 
+                    to="/admin/students" 
+                    color="bg-blue-500"
+                  />
+                  <QuickActionLink 
+                    icon={Building2} 
+                    label="Manage Faculty Directory" 
+                    to="/admin/faculty" 
+                    color="bg-indigo-500"
+                  />
+                  <QuickActionLink 
+                    icon={CalendarPlus} 
+                    label="Manage Public Upcoming Events" 
+                    to="/admin/events" 
+                    color="bg-emerald-500"
+                  />
+                  <QuickActionLink 
+                    icon={CheckCircle} 
+                    label="Content Moderation (Approvals)" 
+                    to="/admin/moderation" 
+                    color="bg-orange-500"
+                  />
+                  <QuickActionLink 
+                    to="/admin/users" 
+                    icon={Users} 
+                    label="User Records" 
+                    color="bg-purple-500"
+                  />
+                  <QuickActionLink 
+                    icon={Megaphone} 
+                    label="Create New Announcement" 
+                    to="/admin/announcements" 
+                    color="bg-blue-600"
+                  />
+                </div>
               </div>
-            )}
 
-            <div className="space-y-4">
-              <button
-                onClick={() => setShowAnnouncement(!showAnnouncement)}
-                className="flex w-full items-center justify-between rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-6 py-4 dark:bg-gray-800 dark:border-gray-600"
-              >
-                <span className="flex items-center gap-2">
-                  <Megaphone className="h-5 w-5 text-blue-600" />
-                  Create New Announcement
-                </span>
-                {showAnnouncement ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-              </button>
+              {/* Moderation Queues */}
+              <div className="space-y-6">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Moderation Queues
+                </h2>
+                <div className="grid grid-cols-1 gap-6">
+                  <section className="space-y-4">
+                    <button
+                      onClick={toggleModeration}
+                      className="flex w-full items-center justify-between rounded-xl border border-gray-100 bg-white px-6 py-4 transition-all hover:border-blue-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+                    >
+                      <span className="flex items-center gap-3">
+                        <BookOpen className="h-5 w-5 text-blue-600" />
+                        <span className="font-semibold text-gray-900 dark:text-white">Yearbook Queue</span>
+                        {stats.pendingEntries > 0 && (
+                          <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-bold text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                            {stats.pendingEntries}
+                          </span>
+                        )}
+                      </span>
+                      {showModeration ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                    </button>
 
-              {showAnnouncement && (
-                <Card className="p-6">
-                  <form onSubmit={handlePublishAnnouncement} className="space-y-4">
-                    <Input
-                      type="text"
-                      value={announcement.title}
-                      onChange={(e) => setAnnouncement({ ...announcement, title: e.target.value })}
-                      placeholder="Announcement Title"
-                    />
-                    <Textarea
-                      value={announcement.content}
-                      onChange={(e) => setAnnouncement({ ...announcement, content: e.target.value })}
-                      placeholder="Write your announcement here..."
-                      rows={4}
-                    />
-
-                    <div className="space-y-3">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Add Photo or Video (Optional)</p>
-                      {announcementMediaPreview && (
-                        <div className="relative overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
-                          {announcementMedia?.type.startsWith('video/') ? (
-                            <video src={announcementMediaPreview} className="max-h-48 w-full object-cover" controls />
-                          ) : (
-                            <img src={announcementMediaPreview} alt="Preview" className="max-h-48 w-full object-cover" />
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => { setAnnouncementMedia(null); setAnnouncementMediaPreview(''); }}
-                            className="absolute right-2 top-2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      )}
-                      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-white p-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                        <ImagePlus className="h-5 w-5" />
-                        <span>{announcementMediaPreview ? 'Change Media' : 'Upload Photo or Video'}</span>
-                        <input type="file" accept="image/*,video/*" onChange={handleAnnouncementMedia} className="hidden" />
-                      </label>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Target Audience</p>
-                      <div className="flex flex-wrap gap-4">
-                      {PUBLIC_SIGNUP_ROLES.map((role) => (
-                        <label key={role} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={announcement.target_roles.includes(role)}
-                            onChange={() => handleRoleToggle(role)}
-                          />
-                          <span className="capitalize dark:text-white">{role}</span>
-                        </label>
-                      ))}
-                      </div>
-                    </div>
-                    <Button type="submit" disabled={isPublishing} className="px-6">
-                      {isPublishing ? 'Publishing...' : 'Publish'}
-                    </Button>
-                  </form>
-                </Card>
-              )}
-            </div>
-
-            <div className="space-y-4">
-              <button
-                onClick={toggleModeration}
-                className="flex w-full items-center justify-between rounded-lg bg-blue-600 px-6 py-4 text-white"
-              >
-                <span>Review Yearbook Entries ({stats.pendingEntries} Pending)</span>
-                {showModeration ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-              </button>
-
-              {showModeration && (
-                <Card className="p-6">
-                  {loadingQueue ? (
-                    <div className="flex justify-center p-4">
-                      <Spinner className="h-8 w-8" />
-                    </div>
-                  ) : pendingQueue.length === 0 ? (
-                    <EmptyState description="No pending entries to review." />
-                  ) : (
-                    <div className="space-y-6">
-                      {pendingQueue.map((entry) => (
-                        <div key={entry.id} className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-900/50">
-                          <div className="flex flex-col md:flex-row">
-                            {entry.profile_image_url && (
-                              <div className="w-full md:w-48 shrink-0 bg-gray-200 dark:bg-gray-800">
-                                {/\.(mp4|webm|mov)(\?.*)?$/i.test(entry.profile_image_url) ? (
-                                  <video 
-                                    src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${entry.profile_image_url}`} 
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <img 
-                                    src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${entry.profile_image_url}`} 
-                                    alt="Pending entry" 
-                                    className="h-full w-full object-cover"
-                                  />
-                                )}
-                              </div>
-                            )}
-                            <div className="flex-1 p-5">
-                              <div className="mb-4">
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{entry.author_name}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{entry.academic_year} Academic Year</p>
-                              </div>
-                              <div className="space-y-3">
-                                <div>
-                                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Quote</p>
+                    {showModeration && (
+                      <Card className="p-4 overflow-hidden">
+                        {loadingQueue ? (
+                          <div className="flex justify-center py-8"><Spinner /></div>
+                        ) : pendingQueue.length === 0 ? (
+                          <EmptyState description="All yearbook entries have been moderated." icon={CheckCircle} />
+                        ) : (
+                          <div className="space-y-4">
+                            {pendingQueue.map((entry) => (
+                              <div key={entry.id} className="flex flex-col gap-4 rounded-lg border border-gray-50 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-900/50 sm:flex-row sm:items-center">
+                                <div className="flex-1 space-y-1">
+                                  <p className="font-semibold text-gray-900 dark:text-white">{entry.author_name}</p>
+                                  <p className="text-sm text-gray-500">{entry.course} • {entry.academic_year}</p>
                                   <p className="text-sm italic text-gray-700 dark:text-gray-300">"{entry.yearbook_quote}"</p>
                                 </div>
-                                {entry.favorite_memory && (
-                                  <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Favorite Memory</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">{entry.favorite_memory}</p>
-                                  </div>
-                                )}
+                                <div className="flex items-center gap-2">
+                                  <Button variant="secondary" onClick={() => handleModerate(entry.id, 'rejected')} className="text-red-600">Reject</Button>
+                                  <Button onClick={() => handleModerate(entry.id, 'approved')}>Approve</Button>
+                                </div>
                               </div>
-                              <div className="mt-6 flex gap-3">
-                                <Button onClick={() => handleModerate(entry.id, 'approved')} variant="success" className="flex-1">
-                                  <CheckCircle className="mr-2 h-4 w-4" />
-                                  Approve
-                                </Button>
-                                <Button onClick={() => handleModerate(entry.id, 'rejected')} variant="danger" className="flex-1">
-                                  <AlertCircle className="mr-2 h-4 w-4" />
-                                  Reject
-                                </Button>
-                              </div>
-                            </div>
+                            ))}
                           </div>
-                        </div>
-                      ))}
+                        )}
+                      </Card>
+                    )}
+                  </section>
+
+                  <section className="space-y-4">
+                    <button
+                      onClick={toggleMemoryModeration}
+                      className="flex w-full items-center justify-between rounded-xl border border-gray-100 bg-white px-6 py-4 transition-all hover:border-emerald-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+                    >
+                      <span className="flex items-center gap-3">
+                        <Heart className="h-5 w-5 text-emerald-600" />
+                        <span className="font-semibold text-gray-900 dark:text-white">Memories Queue</span>
+                        {stats.pendingMemories > 0 && (
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            {stats.pendingMemories}
+                          </span>
+                        )}
+                      </span>
+                      {showMemoryModeration ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                    </button>
+
+                    {showMemoryModeration && (
+                      <Card className="p-4 overflow-hidden">
+                        {loadingMemories ? (
+                          <div className="flex justify-center py-8"><Spinner /></div>
+                        ) : pendingMemories.length === 0 ? (
+                          <EmptyState description="All shared memories have been moderated." icon={CheckCircle} />
+                        ) : (
+                          <div className="space-y-4">
+                            {pendingMemories.map((memory) => (
+                              <div key={memory.id} className="flex flex-col gap-4 rounded-lg border border-gray-50 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <p className="font-semibold text-gray-900 dark:text-white">{memory.title}</p>
+                                    <span className="text-xs text-gray-500">{memory.academic_year}</span>
+                                  </div>
+                                  <p className="text-sm text-gray-500">By {memory.author_name}</p>
+                                  <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{memory.story}</p>
+                                </div>
+                                <div className="flex items-center justify-end gap-2 pt-2 border-t dark:border-gray-700">
+                                  <Button variant="secondary" onClick={() => handleMemoryModerate(memory.id, 'rejected')} className="text-red-600">Reject</Button>
+                                  <Button onClick={() => handleMemoryModerate(memory.id, 'approved')}>Approve</Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </Card>
+                    )}
+                  </section>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              {/* Detailed Role Breakdown */}
+              <Card className="p-6 space-y-6">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">User Distribution</h2>
+                <div className="space-y-4">
+                  {[
+                    { label: 'Students', value: stats.studentCount, color: 'bg-blue-500' },
+                    { label: 'Faculty', value: stats.facultyCount, color: 'bg-indigo-500' },
+                    { label: 'Alumni', value: stats.alumniCount, color: 'bg-orange-500' },
+                    { label: 'Admins', value: stats.adminCount, color: 'bg-red-500' },
+                  ].map((item) => (
+                    <div key={item.label} className="space-y-2">
+                      <div className="flex justify-between text-sm font-medium">
+                        <span className="text-gray-600 dark:text-gray-400">{item.label}</span>
+                        <span className="text-gray-900 dark:text-white font-bold">{item.value}</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${item.color}`} 
+                          style={{ width: `${(item.value / (stats.totalUsers || 1)) * 100}%` }}
+                        />
+                      </div>
                     </div>
-                  )}
+                  ))}
+                </div>
+              </Card>
+
+              {/* Graduation Transition */}
+              {profile?.role === 'admin' && (
+                <Card className="p-6 space-y-4 border-2 border-dashed border-yellow-200 dark:border-yellow-900/30">
+                  <h2 className="flex items-center gap-2 font-semibold text-gray-900 dark:text-white">
+                    <Zap className="h-5 w-5 text-yellow-600" />
+                    Academic Transition
+                  </h2>
+                  <p className="text-xs text-gray-500">
+                    Process students graduating in a specific year to Alumni status.
+                  </p>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase text-gray-400 ml-1">Graduation Class</label>
+                      <Select
+                        value={gradYearToProcess}
+                        onChange={(e) => setGradYearToProcess(parseInt(e.target.value))}
+                      >
+                        {yearOptions.map((year) => (
+                          <option key={year} value={year}>Class of {year}</option>
+                        ))}
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase text-gray-400 ml-1">Safety Confirmation</label>
+                      <Input
+                        value={transitionConfirm}
+                        onChange={(e) => setTransitionConfirm(e.target.value)}
+                        placeholder="Type CONFIRM"
+                      />
+                    </div>
+                    <Button
+                      onClick={processGraduations}
+                      disabled={isProcessing || transitionConfirm !== 'CONFIRM'}
+                      className="w-full bg-yellow-600 hover:bg-yellow-700"
+                    >
+                      {isProcessing ? 'Processing...' : 'Transition Class'}
+                    </Button>
+                  </div>
                 </Card>
               )}
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

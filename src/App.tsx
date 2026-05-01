@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useAuthStore } from './lib/stores/authStore';
 import './index.css';
 
@@ -8,21 +8,29 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { PublicLanding } from './pages/PublicLanding';
+import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { Yearbook } from './pages/Yearbook';
+import { Memories } from './pages/Memories';
 import { Alumni } from './pages/Alumni';
 import { ProfilePage } from './pages/ProfilePage';
 import { ProfileEdit } from './pages/ProfileEdit';
-import { Search } from './pages/Search';
+import { Notifications } from './pages/Notifications';
 import { Admin } from './pages/Admin';
-import { ManageStudents } from './pages/ManageStudents';
-import { CreateAnnouncement } from './pages/CreateAnnouncement';
+import { ContentModeration } from './pages/admin/ContentModeration';
+import { ManageStudents } from './pages/admin/ManageStudents';
+import { ManageFaculty } from './pages/admin/ManageFaculty';
+import { ManageEvents } from './pages/admin/ManageEvents';
+import { Announcements } from './pages/Announcements';
+import { ManageUsers } from './pages/admin/ManageUsers';
+import { CreateAnnouncement } from './pages/admin/CreateAnnouncement';
 import { NotFound } from './pages/NotFound';
 import { EmptyState } from './components/ui';
 import { ThemeProvider } from './lib/hooks/useTheme';
 
 function App() {
-  const { checkAuth } = useAuthStore();
+  const { checkAuth, user } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
@@ -32,6 +40,7 @@ function App() {
     <ThemeProvider>
       <BrowserRouter>
         <Routes>
+          <Route path="/" element={<PublicLanding />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
@@ -42,21 +51,36 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route 
+              path="/dashboard" 
+              element={
+                user?.role === 'admin' || user?.role === 'faculty' 
+                  ? <Admin /> 
+                  : <Dashboard />
+              } 
+            />
             <Route path="/yearbook" element={<Yearbook />} />
+            <Route path="/memories" element={<Memories />} />
             <Route path="/alumni" element={<Alumni />} />
-            <Route path="/search" element={<Search />} />
+            <Route path="/notifications" element={<Notifications />} />
             <Route path="/profile/:id" element={<ProfilePage />} />
             <Route path="/profile/edit" element={<ProfileEdit />} />
-            <Route path="/admin/students/manage" element={<ProtectedRoute allowedRoles={['admin']}><ManageStudents /></ProtectedRoute>} />
-            <Route path="/admin/announcements/create" element={<ProtectedRoute allowedRoles={['admin', 'faculty']}><CreateAnnouncement /></ProtectedRoute>} />
+            
+            {/* Admin Specific Routes */}
+            <Route path="/admin/users" element={<ManageUsers />} />
+            <Route path="/admin/students" element={<ManageStudents />} />
+            <Route path="/admin/faculty" element={<ManageFaculty />} />
+            <Route path="/admin/events" element={<ManageEvents />} />
+            <Route path="/admin/announcements" element={<CreateAnnouncement />} />
+            <Route path="/admin/moderation" element={<ContentModeration />} />
+
             <Route
               path="/announcements"
-              element={<EmptyState title="Announcements" description="No announcements yet. Stay tuned for updates." />}
+              element={<Announcements />}
             />
           </Route>
 
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

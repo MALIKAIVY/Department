@@ -38,6 +38,8 @@ async def get_connections(
         
         out.append({
             "id": conn.id,
+            "requester_id": conn.requester_id,
+            "receiver_id": conn.receiver_id,
             "status": conn.status,
             "message": conn.message,
             "other_user": {
@@ -51,6 +53,44 @@ async def get_connections(
         })
     return out
 
+@router.get("/status/{other_id}")
+async def get_connection_status(
+    other_id: uuid.UUID,
+    db: AsyncSession = Depends(database.get_db),
+    current_user: models.Profile = Depends(get_current_user)
+):
+    stmt = select(models.Connection).where(
+        or_(
+            and_(models.Connection.requester_id == current_user.id, models.Connection.receiver_id == other_id),
+            and_(models.Connection.requester_id == other_id, models.Connection.receiver_id == current_user.id)
+        )
+    ).options(
+        joinedload(models.Connection.requester),
+        joinedload(models.Connection.receiver)
+    )
+    result = await db.execute(stmt)
+    conn = result.unique().scalars().first()
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+
+    is_requester = conn.requester_id == current_user.id
+    other_user = conn.receiver if is_requester else conn.requester
+    return {
+        "id": conn.id,
+        "requester_id": conn.requester_id,
+        "receiver_id": conn.receiver_id,
+        "status": conn.status,
+        "message": conn.message,
+        "other_user": {
+            "id": other_user.id,
+            "full_name": other_user.full_name,
+            "avatar_url": other_user.avatar_url,
+            "role": other_user.role,
+        },
+        "is_requester": is_requester,
+        "created_at": conn.created_at,
+    }
+
 @router.post("/{receiver_id}")
 async def request_connection(
     receiver_id: uuid.UUID,
@@ -63,7 +103,8 @@ async def request_connection(
         
     # Check if user exists
     res = await db.execute(select(models.Profile).where(models.Profile.id == receiver_id))
-    if not res.scalars().first():
+    receiver = res.scalars().first()
+    if not receiver:
         raise HTTPException(status_code=404, detail="User not found")
         
     # Check existing
@@ -84,6 +125,13 @@ async def request_connection(
         status="pending"
     )
     db.add(new_conn)
+    db.add(models.Notification(
+        user_id=receiver_id,
+        type="connection_request",
+        title="New connection request",
+        message=f"{current_user.full_name} wants to connect with you.",
+        link=f"/profile/{current_user.id}",
+    ))
     await db.commit()
     return {"detail": "Connection request sent"}
 
@@ -105,8 +153,48 @@ async def accept_connection(
         raise HTTPException(status_code=400, detail="Connection not in pending state")
         
     conn.status = "accepted"
+    db.add(models.Notification(
+        user_id=conn.requester_id,
+        type="connection_accepted",
+        title="Connection accepted",
+        message=f"{current_user.full_name} accepted your connection request.",
+        link=f"/profile/{current_user.id}",
+    ))
     await db.commit()
     return {"detail": "Connection accepted"}
+
+@router.put("/{connection_id}/status")
+async def update_connection_status(
+    connection_id: uuid.UUID,
+    payload: dict,
+    db: AsyncSession = Depends(database.get_db),
+    current_user: models.Profile = Depends(get_current_user)
+):
+    status_value = payload.get("status")
+    if status_value not in ["accepted", "rejected"]:
+        raise HTTPException(status_code=400, detail="Status must be accepted or rejected")
+
+    stmt = select(models.Connection).where(models.Connection.id == connection_id)
+    result = await db.execute(stmt)
+    conn = result.scalars().first()
+
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    if conn.receiver_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the receiver can respond")
+    if conn.status != "pending":
+        raise HTTPException(status_code=400, detail="Connection not in pending state")
+
+    conn.status = status_value
+    db.add(models.Notification(
+        user_id=conn.requester_id,
+        type=f"connection_{status_value}",
+        title=f"Connection {status_value}",
+        message=f"{current_user.full_name} {status_value} your connection request.",
+        link=f"/profile/{current_user.id}",
+    ))
+    await db.commit()
+    return {"detail": f"Connection {status_value}"}
 
 @router.delete("/{connection_id}")
 async def remove_connection(

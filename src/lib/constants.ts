@@ -1,10 +1,10 @@
 import {
   BarChart3,
+  Bell,
   BookOpen,
   GraduationCap,
   LayoutDashboard,
   MessageSquare,
-  Search,
   Users,
 } from 'lucide-react';
 import type { UserRole } from './types';
@@ -58,9 +58,9 @@ export const NAV_ITEMS = [
     roles: ['student', 'alumni'],
   },
   {
-    label: 'Search',
-    href: '/search',
-    icon: Search,
+    label: 'Memories',
+    href: '/memories',
+    icon: MessageSquare,
     roles: USER_ROLES,
   },
   {
@@ -70,9 +70,15 @@ export const NAV_ITEMS = [
     roles: USER_ROLES,
   },
   {
-    label: 'Moderation',
-    href: '/admin/moderation',
-    icon: GraduationCap,
-    roles: ['faculty', 'admin'],
+    label: 'Notifications',
+    href: '/notifications',
+    icon: Bell,
+    roles: USER_ROLES,
+  },
+  {
+    label: 'User Management',
+    href: '/admin/users',
+    icon: Users,
+    roles: ['admin'],
   },
 ] as const;

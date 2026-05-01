@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { api } from '../api';
 import type { User, Profile, AuthResponse, SignUpData } from '../types';
 
@@ -11,84 +12,114 @@ interface AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   updateProfile: (profile: Profile) => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  profile: null,
-  isLoading: true,
-  isAuthenticated: false,
-
-  signUp: async (signUpData: SignUpData) => {
-    const data: AuthResponse = await api.fetch('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(signUpData)
-    });
-    
-    localStorage.setItem('access_token', data.access_token);
-    localStorage.setItem('refresh_token', data.refresh_token);
-    
-    set({
-      user: data.user,
-      profile: data.user, // The backend returns the Profile model as 'user'
-      isAuthenticated: true,
-    });
-
-  },
-
-  signIn: async (email: string, password: string) => {
-    const data: AuthResponse = await api.fetch('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password })
-    });
-
-    localStorage.setItem('access_token', data.access_token);
-    localStorage.setItem('refresh_token', data.refresh_token);
-
-    set({
-      user: data.user,
-      profile: data.user, // The backend returns the Profile model as 'user'
-      isAuthenticated: true,
-    });
-
-  },
-
-
-  signOut: async () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    set({
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
       user: null,
       profile: null,
+      isLoading: true,
       isAuthenticated: false,
-    });
-  },
 
-  checkAuth: async () => {
-    const accessToken = localStorage.getItem('access_token');
-    if (!accessToken) {
-      set({ isLoading: false, isAuthenticated: false, user: null, profile: null });
-      return;
+      signUp: async (signUpData: SignUpData) => {
+        const data: AuthResponse = await api.fetch('/auth/register', {
+          method: 'POST',
+          body: JSON.stringify(signUpData)
+        });
+        
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('refresh_token', data.refresh_token);
+        
+        set({
+          user: data.user,
+          profile: data.user,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+      },
+
+      signIn: async (email: string, password: string) => {
+        const data: AuthResponse = await api.fetch('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password })
+        });
+
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('refresh_token', data.refresh_token);
+
+        set({
+          user: data.user,
+          profile: data.user,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+      },
+
+      signOut: async () => {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        set({
+          user: null,
+          profile: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+      },
+
+      checkAuth: async () => {
+        const accessToken = localStorage.getItem('access_token');
+        if (!accessToken) {
+          set({ isLoading: false, isAuthenticated: false, user: null, profile: null });
+          return;
+        }
+
+        set({ isLoading: true });
+        try {
+          const data = await api.fetch('/auth/me');
+          set({
+            user: data,
+            profile: data,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } catch (error: any) {
+          // If api.fetch fails (even after refresh attempts), clear state
+          set({ isLoading: false, isAuthenticated: false, user: null, profile: null });
+        }
+      },
+
+      changePassword: async (currentPassword: string, newPassword: string) => {
+        await api.fetch('/auth/change-password', {
+          method: 'POST',
+          body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: newPassword,
+          })
+        });
+
+        const data = await api.fetch('/auth/me');
+        set({
+          user: data,
+          profile: data,
+          isAuthenticated: true,
+        });
+      },
+
+      updateProfile: (profile: Profile) => {
+        set({ profile, user: profile });
+      },
+    }),
+    {
+      name: 'dtcy-auth-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ 
+        user: state.user, 
+        profile: state.profile, 
+        isAuthenticated: state.isAuthenticated 
+      }),
     }
-
-    try {
-      const data = await api.fetch('/auth/me');
-      set({
-        user: data, // data is the Profile model directly
-        profile: data,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-
-    } catch (error: any) {
-      // Refresh logic is handled in api.ts
-      // If api.fetch fails even after refresh, it will clear tokens and redirect
-      set({ isLoading: false, isAuthenticated: false, user: null, profile: null });
-    }
-  },
-
-  updateProfile: (profile: Profile) => {
-    set({ profile });
-  },
-}));
+  )
+);

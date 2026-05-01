@@ -87,8 +87,8 @@ export const Dashboard: React.FC = () => {
       setIsLoading(true);
       try {
         const [statsResult, announcementsResult] = await Promise.allSettled([
-          api.fetch('/users/stats'),
-          api.fetch('/announcements?limit=4'),
+          api.fetch('/users/stats/'),
+          api.fetch('/announcements/?limit=4'),
         ]);
 
         if (statsResult.status === 'fulfilled') {
@@ -111,7 +111,7 @@ export const Dashboard: React.FC = () => {
         }
 
         if (user?.role === 'student' || user?.role === 'alumni') {
-          const connectionData = await api.fetch('/connections').catch(() => []);
+          const connectionData = await api.fetch('/connections/').catch(() => []);
           setConnections(connectionData || []);
         }
 
@@ -136,11 +136,11 @@ export const Dashboard: React.FC = () => {
 
     setIsProcessingGraduation(true);
     try {
-      const result = await api.fetch('/admin/graduations/process', {
+      const result = await api.fetch('/users/graduate', {
         method: 'POST',
         body: JSON.stringify({ year_of_study: yearOfStudy }),
       });
-      toast.success(`Successfully transitioned ${result.processed_count} students to Alumni!`);
+      toast.success(`Successfully transitioned ${result.transitioned} students to Alumni!`);
     } catch (err: any) {
       toast.error(err.message || 'Failed to process graduations');
     } finally {
@@ -157,18 +157,25 @@ export const Dashboard: React.FC = () => {
     if (role === 'student') {
       return [
         {
-          label: yearbookEntry ? 'Edit yearbook entry' : 'Add photo/video entry',
-          description: yearbookEntry ? 'Update your quote, memories, and media.' : 'Start your yearbook profile with a photo or video.',
+          label: 'Edit yearbook entry',
+          description: 'Update your quote, memories, and media.',
           href: '/yearbook',
           icon: PenLine,
           variant: 'primary',
         },
         {
-          label: 'Browse alumni',
-          description: 'Find graduates by year, industry, and career path.',
+          label: 'Connect with alumni',
+          description: 'Reach out to an alumni mentor.',
           href: '/alumni',
           icon: Briefcase,
           variant: 'success',
+        },
+        {
+          label: 'View memories',
+          description: 'Browse shared class moments.',
+          href: '/memories',
+          icon: Sparkles,
+          variant: 'primary',
         },
         {
           label: 'Search members',
@@ -274,6 +281,12 @@ export const Dashboard: React.FC = () => {
         description="Your department yearbook hub is ready."
       />
 
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {statCards.map((stat) => (
+          <MetricCard key={stat.label} {...stat} />
+        ))}
+      </section>
+
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.85fr)]">
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-6 dark:border-blue-900/60 dark:bg-blue-950/30">
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
@@ -286,7 +299,7 @@ export const Dashboard: React.FC = () => {
             {copy.description}
           </p>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {quickActions.map((action) => (
               <ActionTile key={action.label} action={action} onClick={() => navigate(action.href)} />
             ))}
@@ -302,11 +315,6 @@ export const Dashboard: React.FC = () => {
         />
       </section>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {statCards.map((stat) => (
-          <MetricCard key={stat.label} {...stat} />
-        ))}
-      </section>
 
       {user?.role === 'admin' && (
         <Card className="p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200 dark:from-yellow-900/10 dark:to-orange-900/10 dark:border-yellow-900/30">
@@ -674,16 +682,7 @@ function RoleDetailPanel({
   stats: DashboardStats;
 }) {
   if (role === 'student') {
-    return (
-      <section>
-        <SectionTitle title="Student Checklist" description="The fastest way to make your profile useful." />
-        <div className="grid gap-4 md:grid-cols-3">
-          <ChecklistItem done={Boolean(yearbookEntry)} title="Submit yearbook media" description="Photo or video plus your quote." />
-          <ChecklistItem done={connections.some((connection) => connection.status === 'accepted')} title="Make a connection" description="Reach out to an alumni mentor." />
-          <ChecklistItem done={Boolean(yearbookEntry?.favorite_memory)} title="Add a memory" description="Share a moment your class will recognize." />
-        </div>
-      </section>
-    );
+    return null;
   }
 
   if (role === 'faculty') {

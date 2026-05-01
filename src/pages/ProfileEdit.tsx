@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../lib/stores/authStore';
 import { api } from '../lib/api';
@@ -44,7 +44,7 @@ export const ProfileEdit: React.FC = () => {
       if (avatarFile) {
         const uploadData = new FormData();
         uploadData.append('file', avatarFile);
-        const res = await api.fetch('/upload', {
+        const res = await api.fetch('/users/avatar', {
           method: 'POST',
           body: uploadData,
           headers: {} // Let browser set multipart boundary
@@ -52,17 +52,22 @@ export const ProfileEdit: React.FC = () => {
         avatarUrl = res.url;
       }
 
-      const updatePayload = {
-        ...formData,
+      const updatePayload: any = {
+        full_name: formData.full_name,
+        bio: formData.bio,
+        phone: formData.phone,
         avatar_url: avatarUrl,
       };
 
-      // Strip internal fields
-      delete updatePayload.id;
-      delete updatePayload.created_at;
-      delete updatePayload.updated_at;
-      delete updatePayload.email;
-      delete updatePayload.role;
+      if (user.role === 'student') {
+        updatePayload.student = formData.student;
+      }
+      if (user.role === 'faculty') {
+        updatePayload.faculty = formData.faculty;
+      }
+      if (user.role === 'alumni') {
+        updatePayload.alumni = formData.alumni;
+      }
 
       const updatedProfile = await api.fetch('/users/me', {
         method: 'PUT',
@@ -140,18 +145,82 @@ export const ProfileEdit: React.FC = () => {
               <Field label="Current Company">
                 <Input
                   type="text"
-                  value={formData.current_company || ''}
+                  value={formData.alumni?.current_company || ''}
                   onChange={(e) =>
-                    setFormData({ ...formData, current_company: e.target.value })
+                    setFormData({ ...formData, alumni: { ...formData.alumni, current_company: e.target.value } })
                   }
                 />
               </Field>
               <Field label="Position">
                 <Input
                   type="text"
-                  value={formData.current_job_title || ''}
+                  value={formData.alumni?.current_position || ''}
                   onChange={(e) =>
-                    setFormData({ ...formData, current_job_title: e.target.value })
+                    setFormData({ ...formData, alumni: { ...formData.alumni, current_position: e.target.value } })
+                  }
+                />
+              </Field>
+              <Field label="Industry">
+                <Input
+                  type="text"
+                  value={formData.alumni?.industry || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, alumni: { ...formData.alumni, industry: e.target.value } })
+                  }
+                />
+              </Field>
+              <Field label="LinkedIn URL">
+                <Input
+                  type="url"
+                  value={formData.alumni?.linkedin_url || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, alumni: { ...formData.alumni, linkedin_url: e.target.value } })
+                  }
+                />
+              </Field>
+            </>
+          )}
+
+          {user.role === 'student' && (
+            <>
+              <Field label="LinkedIn URL">
+                <Input
+                  type="url"
+                  value={formData.student?.linkedin_url || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, student: { ...formData.student, linkedin_url: e.target.value } })
+                  }
+                />
+              </Field>
+              <Field label="Portfolio URL">
+                <Input
+                  type="url"
+                  value={formData.student?.portfolio_url || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, student: { ...formData.student, portfolio_url: e.target.value } })
+                  }
+                />
+              </Field>
+            </>
+          )}
+
+          {user.role === 'faculty' && (
+            <>
+              <Field label="Office Location">
+                <Input
+                  type="text"
+                  value={formData.faculty?.office_location || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, faculty: { ...formData.faculty, office_location: e.target.value } })
+                  }
+                />
+              </Field>
+              <Field label="LinkedIn URL">
+                <Input
+                  type="url"
+                  value={formData.faculty?.linkedin_url || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, faculty: { ...formData.faculty, linkedin_url: e.target.value } })
                   }
                 />
               </Field>

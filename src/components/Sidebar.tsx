@@ -11,7 +11,13 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
   const location = useLocation();
-  const filteredItems = NAV_ITEMS.filter((item) => (item.roles as readonly UserRole[]).includes(role));
+  
+  // Normalize role and filter items
+  const userRole = (role || '').toLowerCase();
+  const filteredItems = NAV_ITEMS.filter((item) => {
+    const allowedRoles = item.roles as readonly string[];
+    return allowedRoles.includes(userRole);
+  });
 
   return (
     <aside className="hidden w-64 flex-shrink-0 border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 md:flex md:flex-col">
@@ -23,7 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 py-6">
+      <nav className="flex-1 space-y-1 px-3 py-6 overflow-y-auto">
         {filteredItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.href || location.pathname.startsWith(`${item.href}/`);
@@ -44,6 +50,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ role }) => {
             </Link>
           );
         })}
+        
+        {filteredItems.length === 0 && (
+          <div className="px-4 py-10 text-center">
+            <p className="text-xs text-gray-400">No navigation items available for your role ({role})</p>
+          </div>
+        )}
       </nav>
 
       <div className="border-t border-gray-200 px-6 py-4 dark:border-gray-700">

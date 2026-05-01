@@ -28,6 +28,12 @@ CREATE TABLE public.profiles (
     bio TEXT,
     role TEXT NOT NULL CHECK (role IN ('student', 'faculty', 'alumni', 'admin')),
     is_active BOOLEAN DEFAULT true,
+    consent_given BOOLEAN DEFAULT false,
+    consent_timestamp TIMESTAMPTZ,
+    is_first_login BOOLEAN DEFAULT false,
+    failed_login_attempts INTEGER DEFAULT 0,
+    locked_until TIMESTAMPTZ,
+    last_login TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
@@ -41,7 +47,6 @@ CREATE INDEX idx_profiles_role ON public.profiles(role);
 CREATE TABLE public.students (
     id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
     student_id TEXT UNIQUE NOT NULL,
-    date_of_birth DATE,
     year_of_study INTEGER CHECK (year_of_study BETWEEN 1 AND 6),
     graduation_year INTEGER,
     enrollment_date DATE DEFAULT CURRENT_DATE,
@@ -113,6 +118,22 @@ CREATE TABLE public.yearbook_entries (
 CREATE INDEX idx_yearbook_status ON public.yearbook_entries(status);
 CREATE INDEX idx_yearbook_user ON public.yearbook_entries(user_id);
 
+CREATE TABLE public.memory_submissions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    submitted_by UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    story TEXT NOT NULL,
+    media_url TEXT,
+    academic_year TEXT NOT NULL,
+    event_name TEXT,
+    location TEXT,
+    status TEXT DEFAULT 'pending',
+    rejection_reason TEXT,
+    reviewed_by UUID REFERENCES public.profiles(id),
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE public.connections (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     requester_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -135,6 +156,38 @@ CREATE TABLE public.announcements (
     target_roles TEXT[] DEFAULT '{}',
     is_published BOOLEAN DEFAULT false,
     published_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE public.public_events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    event_date TEXT NOT NULL,
+    location TEXT,
+    description TEXT NOT NULL,
+    is_published BOOLEAN DEFAULT true,
+    created_by UUID REFERENCES public.profiles(id),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE public.notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    link TEXT,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE public.moderation_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    entry_id UUID NOT NULL REFERENCES public.yearbook_entries(id) ON DELETE CASCADE,
+    moderator_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    submitter_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    reason TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_announcements_published ON public.announcements(is_published);

@@ -58,18 +58,18 @@ export const api = {
           isRefreshing = false;
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
-          window.location.href = '/login';
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
           throw err;
         }
       }
 
-      const retryOrigRequest = new Promise<any>((resolve) => {
+      return new Promise((resolve, reject) => {
         subscribeTokenRefresh((token) => {
-          headers['Authorization'] = `Bearer ${token}`;
-          resolve(fetch(`${API_URL}${endpoint}`, { ...options, headers }).then(res => res.json()));
+          this.fetch(endpoint, options).then(resolve).catch(reject);
         });
       });
-      return retryOrigRequest;
     }
 
     if (!response.ok) {
@@ -87,6 +87,36 @@ export const api = {
        return response.json();
     }
     return response.text();
+  },
+  
+  async post(endpoint: string, body: any, options: RequestInit = {}) {
+    return this.fetch(endpoint, {
+      ...options,
+      method: 'POST',
+      body: body instanceof FormData ? body : JSON.stringify(body)
+    });
+  },
+
+  async put(endpoint: string, body: any, options: RequestInit = {}) {
+    return this.fetch(endpoint, {
+      ...options,
+      method: 'PUT',
+      body: body instanceof FormData ? body : JSON.stringify(body)
+    });
+  },
+
+  async patch(endpoint: string, body: any, options: RequestInit = {}) {
+    return this.fetch(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body: body instanceof FormData ? body : JSON.stringify(body)
+    });
+  },
+
+  async delete(endpoint: string, options: RequestInit = {}) {
+    return this.fetch(endpoint, {
+      ...options,
+      method: 'DELETE'
+    });
   }
 };
-

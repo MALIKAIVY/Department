@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuthStore } from '../lib/stores/authStore';
 import { useConnectionStore } from '../lib/stores/connectionStore';
-import { Linkedin, Github } from 'lucide-react';
+import { Briefcase, CalendarDays, GraduationCap, Linkedin, Github, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Avatar, Button, Card, Spinner, Textarea } from '../components/ui';
+import type { Profile } from '../lib/types';
 
 export const ProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -14,7 +15,7 @@ export const ProfilePage: React.FC = () => {
   const { getConnectionStatus, sendConnectionRequest, respondToConnection } =
     useConnectionStore();
   
-  const [profileUser, setProfileUser] = useState<any | null>(null);
+  const [profileUser, setProfileUser] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<any>(null);
   const [showConnectionMessage, setShowConnectionMessage] = useState(false);
@@ -90,12 +91,19 @@ export const ProfilePage: React.FC = () => {
   if (!profileUser) return null;
 
   const isOwnProfile = currentUserSession?.id === profileUser.id;
-  const roleData = profileUser.role_data || {};
+  const roleData: any =
+    profileUser.role === 'student'
+      ? profileUser.student
+      : profileUser.role === 'faculty'
+        ? profileUser.faculty
+        : profileUser.role === 'alumni'
+          ? profileUser.alumni
+          : null;
 
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden">
-        <div className="h-32 bg-gradient-to-r from-blue-400 to-blue-600"></div>
+        <div className="h-32 bg-blue-600"></div>
         <div className="px-6 pb-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="flex gap-4">
@@ -192,6 +200,10 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-4">
+            <span className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <Mail className="h-5 w-5" />
+              {profileUser.email}
+            </span>
             {roleData.linkedin_url && (
               <a
                 href={roleData.linkedin_url}
@@ -219,50 +231,49 @@ export const ProfilePage: React.FC = () => {
       </Card>
 
       {profileUser.role === 'student' && roleData && (
-        <Card className="p-6">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
-            Academic Information
-          </h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Course / Program</p>
-              <p className="font-medium text-gray-900 dark:text-white">
-                {roleData.course}
-              </p>
+        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+          <Card className="p-6">
+            <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
+              <GraduationCap className="h-5 w-5 text-blue-600" />
+              Academic Information
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <InfoItem label="Student ID" value={roleData.student_id} />
+              <InfoItem label="Year of Study" value={roleData.year_of_study ? `Year ${roleData.year_of_study}` : 'Not set'} />
+              <InfoItem label="Graduation Year" value={roleData.graduation_year || 'Not set'} />
+              <InfoItem label="Courses" value={roleData.courses_enrolled?.length ? roleData.courses_enrolled.join(', ') : 'Not listed'} />
             </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Year of Study</p>
-              <p className="font-medium text-gray-900 dark:text-white">
-                Year {roleData.year_of_study}
-              </p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+          <Card className="p-6">
+            <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">Profile completeness</h2>
+            <ProfileCompleteness profile={profileUser} />
+          </Card>
+        </div>
       )}
 
       {profileUser.role === 'faculty' && roleData && (
         <Card className="p-6">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
+          <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
+            <Briefcase className="h-5 w-5 text-blue-600" />
             Faculty Information
           </h2>
           <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Department</p>
-              <p className="font-medium text-gray-900 dark:text-white">
-                {roleData.department}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Position / Designation</p>
-              <p className="font-medium text-gray-900 dark:text-white">
-                {roleData.position}
-              </p>
-            </div>
+            <InfoItem label="Department" value={roleData.department} />
+            <InfoItem label="Position / Designation" value={roleData.designation} />
+            <InfoItem label="Office Location" value={roleData.office_location || 'Not listed'} />
             {roleData.courses_taught?.length > 0 && (
               <div className="md:col-span-2">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Courses Teaching</p>
                 <p className="font-medium text-gray-900 dark:text-white">
                   {roleData.courses_taught.join(', ')}
+                </p>
+              </div>
+            )}
+            {roleData.research_interest?.length > 0 && (
+              <div className="md:col-span-2">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Research Interests</p>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {roleData.research_interest.join(', ')}
                 </p>
               </div>
             )}
@@ -272,43 +283,54 @@ export const ProfilePage: React.FC = () => {
 
       {profileUser.role === 'alumni' && roleData && (
         <Card className="p-6">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
+          <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
+            <CalendarDays className="h-5 w-5 text-blue-600" />
             Career Information
           </h2>
           <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Graduation Year</p>
-              <p className="font-medium text-gray-900 dark:text-white">
-                {roleData.graduation_year}
-              </p>
-            </div>
+            <InfoItem label="Graduation Year" value={roleData.graduation_year} />
+            <InfoItem label="Degree" value={roleData.degree_earned} />
             {roleData.current_company && (
               <>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Company</p>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    {roleData.current_company}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Position</p>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    {roleData.current_job_title}
-                  </p>
-                </div>
+                <InfoItem label="Company" value={roleData.current_company} />
+                <InfoItem label="Position" value={roleData.current_position || 'Not listed'} />
               </>
             )}
-            {roleData.industry && (
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Industry</p>
-                <p className="font-medium text-gray-900 dark:text-white">
-                  {roleData.industry}
-                </p>
-              </div>
-            )}
+            {roleData.industry && <InfoItem label="Industry" value={roleData.industry} />}
           </div>
         </Card>
       )}
     </div>
   );
 };
+
+function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-sm text-gray-600 dark:text-gray-400">{label}</p>
+      <p className="font-medium text-gray-900 dark:text-white">{value || 'Not listed'}</p>
+    </div>
+  );
+}
+
+function ProfileCompleteness({ profile }: { profile: Profile }) {
+  const checks = [
+    Boolean(profile.avatar_url),
+    Boolean(profile.bio),
+    Boolean(profile.phone),
+    Boolean(profile.student?.linkedin_url || profile.faculty?.linkedin_url || profile.alumni?.linkedin_url),
+    Boolean(profile.student?.courses_enrolled?.length || profile.faculty?.courses_teaching?.length || profile.alumni?.current_company),
+  ];
+  const score = Math.round((checks.filter(Boolean).length / checks.length) * 100);
+
+  return (
+    <div>
+      <div className="h-3 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+        <div className="h-full bg-emerald-600 transition-all" style={{ width: `${score}%` }} />
+      </div>
+      <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+        {score}% complete. Add media, bio, contact, and professional links to improve discovery.
+      </p>
+    </div>
+  );
+}

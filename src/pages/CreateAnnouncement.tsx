@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Megaphone, ImagePlus, X, ArrowLeft, Send } from 'lucide-react';
+import { ImagePlus, X, ArrowLeft, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../lib/api';
-import { Button, Card, Input, PageHeader, Select, Spinner, Textarea } from '../components/ui';
-import { PUBLIC_SIGNUP_ROLES } from '../lib/constants';
+import { Button, Card, Input, PageHeader, Spinner, Textarea } from '../components/ui';
 
 export const CreateAnnouncement: React.FC = () => {
   const navigate = useNavigate();

@@ -1,160 +1,284 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
-from typing import Optional, List, Dict, Any
-from datetime import date, datetime
+from pydantic import BaseModel, EmailStr, Field, HttpUrl, ConfigDict
+from typing import List, Optional, Any, Dict
+from datetime import datetime, date
 import uuid
 
-# --- Base Schemas ---
-
+# Token & Auth
 class Token(BaseModel):
     access_token: str
-    refresh_token: str
     token_type: str
-    user: Dict[str, Any]
+    refresh_token: Optional[str] = None
+    user: Optional[Dict[str, Any]] = None
 
 class TokenData(BaseModel):
-    user_id: Optional[str] = None
-    type: Optional[str] = None
-
-# --- Auth Schemas ---
-
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str = Field(..., min_length=8)
-    full_name: str
-    role: str = Field(..., pattern='^(student|faculty|alumni|admin)$')
-    
-    # Student specific (Optional during reg)
-    student_id: Optional[str] = None
-    graduation_year: Optional[int] = None
-    
-    # Faculty specific
-    faculty_id: Optional[str] = None
-    department: Optional[str] = None
-    
-    # Alumni specific
-    alumni_id: Optional[str] = None
-
-    @field_validator('password')
-    @classmethod
-    def password_complexity(cls, v: str) -> str:
-        if not any(char.isdigit() for char in v):
-            raise ValueError('Password must contain at least one digit')
-        if not any(char.isupper() for char in v):
-            raise ValueError('Password must contain at least one uppercase letter')
-        return v
+    user_id: Optional[uuid.UUID] = None
+    role: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-# --- Profile Schemas ---
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+    role: str = "student"
+    student_id: Optional[str] = None
+    year_of_study: Optional[int] = None
+    graduation_year: Optional[int] = None
+    faculty_id: Optional[str] = None
+    department: Optional[str] = None
+    designation: Optional[str] = None
+    alumni_id: Optional[str] = None
+    degree_earned: Optional[str] = None
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+# Profile & Users
 class StudentProfile(BaseModel):
     student_id: str
-    year_of_study: Optional[int] = Field(None, ge=1, le=6)
+    year_of_study: Optional[int] = None
     graduation_year: Optional[int] = None
-    courses_enrolled: List[str] = []
+    major: Optional[str] = None
     linkedin_url: Optional[str] = None
     github_url: Optional[str] = None
     portfolio_url: Optional[str] = None
 
 class FacultyProfile(BaseModel):
     faculty_id: str
-    department: str
-    designation: str
-    courses_teaching: List[str] = []
+    designation: Optional[str] = None
+    department: Optional[str] = None
     office_location: Optional[str] = None
-    office_hours: Optional[Dict[str, Any]] = None
-    linkedin_url: Optional[str] = None
-    research_interest: List[str] = []
+    research_interests: Optional[List[str]] = []
 
 class AlumniProfile(BaseModel):
     alumni_id: str
     graduation_year: int
-    degree_earned: str
+    degree_earned: Optional[str] = None
+    current_job_title: Optional[str] = None
     current_company: Optional[str] = None
-    current_position: Optional[str] = None
     industry: Optional[str] = None
+    is_visible: bool = True
     linkedin_url: Optional[str] = None
     github_url: Optional[str] = None
-    is_visible: bool = True
+    portfolio_url: Optional[str] = None
 
 class ProfileBase(BaseModel):
     id: uuid.UUID
     email: EmailStr
     full_name: str
-    avatar_url: Optional[str] = None
     role: str
-    is_active: bool
+    bio: Optional[str] = None
+    avatar_url: Optional[str] = None
+    phone: Optional[str] = None
+    is_active: bool = True
+    is_onboarded: bool = False
     created_at: datetime
     
-    # Nested role data
     student: Optional[StudentProfile] = None
     faculty: Optional[FacultyProfile] = None
     alumni: Optional[AlumniProfile] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
+
+class ProfileCreate(BaseModel):
+    email: EmailStr
+    password: Optional[str] = None
+    full_name: str
+    role: str
+    student_id: Optional[str] = None
+    faculty_id: Optional[str] = None
+    graduation_year: Optional[int] = None
+    department: Optional[str] = None
+    designation: Optional[str] = None
 
 class ProfileUpdate(BaseModel):
     full_name: Optional[str] = None
     bio: Optional[str] = None
-    avatar_url: Optional[str] = None
     phone: Optional[str] = None
-    
-    # Role specific updates (handled by same endpoint)
+    avatar_url: Optional[str] = None
     student: Optional[Dict[str, Any]] = None
     faculty: Optional[Dict[str, Any]] = None
     alumni: Optional[Dict[str, Any]] = None
 
-# --- Yearbook Schemas ---
+class ProfileOut(ProfileBase):
+    pass
 
-class YearbookCreate(BaseModel):
-    academic_year: str = Field(..., pattern='^20[2-9][0-9]-20[2-9][0-9]$')
-    yearbook_quote: str = Field(..., max_length=200)
+class UserRegistration(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+
+class StudentCreate(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+    student_id: str
+    year_of_study: int
+    major: str
+
+class FacultyCreate(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+    faculty_id: str
+    department: str
+    designation: str
+
+class BulkStudentItem(BaseModel):
+    email: EmailStr
+    full_name: str
+    student_id: str
+    graduation_year: int
+    password: Optional[str] = None
+
+class BulkStudentCreate(BaseModel):
+    students: List[BulkStudentItem]
+
+class BulkFacultyItem(BaseModel):
+    email: EmailStr
+    full_name: str
+    faculty_id: str
+    department: str
+    designation: str
+    password: Optional[str] = None
+
+class BulkFacultyCreate(BaseModel):
+    faculty: List[BulkFacultyItem]
+
+class RoleUpdate(BaseModel):
+    role: str
+
+# Yearbook
+class YearbookEntryBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    yearbook_quote: Optional[str] = None
     favorite_memory: Optional[str] = None
-    future_plans: Optional[str] = None
+    media_url: Optional[str] = None
+    media_type: Optional[str] = "image"
+    is_private: bool = False
+    academic_year: Optional[str] = None
+    course: Optional[str] = None
+    linkedin_url: Optional[str] = None
     profile_image_url: Optional[str] = None
 
-class YearbookEntryOut(BaseModel):
+class YearbookCreate(YearbookEntryBase):
+    pass
+
+class YearbookEntryCreate(YearbookCreate):
+    pass
+
+class YearbookEntryOut(YearbookEntryBase):
     id: uuid.UUID
-    user_id: uuid.UUID
-    academic_year: str
-    yearbook_quote: str
-    favorite_memory: Optional[str] = None
-    future_plans: Optional[str] = None
+    submitted_by: uuid.UUID
+    author_name: Optional[str] = None
+    author_role: Optional[str] = None
     profile_image_url: Optional[str] = None
     status: str
-    rejection_reason: Optional[str] = None
     created_at: datetime
-    author_name: Optional[str] = None
+    updated_at: Optional[datetime] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
 class YearbookStatusUpdate(BaseModel):
-    status: str = Field(..., pattern='^(approved|rejected)$')
+    status: str
     rejection_reason: Optional[str] = None
 
-# --- Announcement Schemas ---
+# Memories & Connections
+class MemorySubmission(BaseModel):
+    title: str
+    content: str
+    media_url: Optional[str] = None
+    category: Optional[str] = "general"
 
-class AnnouncementCreate(BaseModel):
+class MemoryCreate(BaseModel):
+    title: str
+    story: str
+    media_url: Optional[str] = None
+    academic_year: str
+    event_name: Optional[str] = None
+    location: Optional[str] = None
+
+class MemoryOut(BaseModel):
+    id: uuid.UUID
+    submitted_by: uuid.UUID
+    title: str
+    story: str
+    media_url: Optional[str] = None
+    academic_year: str
+    event_name: Optional[str] = None
+    location: Optional[str] = None
+    status: str
+    created_at: datetime
+    author_name: Optional[str] = None
+    author_role: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class ConnectionBase(BaseModel):
+    status: str
+    message: Optional[str] = None
+
+class ConnectionCreate(BaseModel):
+    receiver_id: uuid.UUID
+    message: Optional[str] = None
+
+class ConnectionOut(ConnectionBase):
+    id: uuid.UUID
+    requester_id: uuid.UUID
+    receiver_id: uuid.UUID
+    created_at: datetime
+    other_user: Optional[Dict[str, Any]] = None
+    is_requester: bool = False
+
+    class Config:
+        from_attributes = True
+
+# Announcements
+class AnnouncementBase(BaseModel):
     title: str
     content: str
     target_roles: List[str] = []
     media_url: Optional[str] = None
-    is_published: bool = True
+    is_published: bool = False
 
-class AnnouncementOut(BaseModel):
+class AnnouncementCreate(AnnouncementBase):
+    pass
+
+class AnnouncementOut(AnnouncementBase):
     id: uuid.UUID
-    title: str
-    content: str
     author_id: uuid.UUID
-    target_roles: List[str]
-    media_url: Optional[str] = None
+    is_published: bool
+    published_at: Optional[datetime] = None
     created_at: datetime
     author_name: Optional[str] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
+# Notifications
+class NotificationOut(BaseModel):
+    id: uuid.UUID
+    type: str
+    title: str
+    message: str
+    link: Optional[str] = None
+    is_read: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# Administrative & Stats
 class DashboardStats(BaseModel):
     totalUsers: int
     studentCount: int
@@ -163,16 +287,29 @@ class DashboardStats(BaseModel):
     adminCount: int
     totalYearbookEntries: int
     pendingEntries: int
+    pendingMemories: int
     userConnections: int
 
-# --- Admin Schemas ---
+class GraduationRequest(BaseModel):
+    year_of_study: Optional[int] = None
+    graduation_year: Optional[int] = None
 
-class AdminStudentCreate(BaseModel):
-    email: EmailStr
-    full_name: str
-    student_id: str
+class GraduationResult(BaseModel):
+    transitioned: int
+    advanced: int
     graduation_year: int
-    password: Optional[str] = None # If none, generate one
 
-class BulkStudentCreate(BaseModel):
-    students: List[AdminStudentCreate]
+class PublicEventCreate(BaseModel):
+    title: str
+    event_date: str
+    location: Optional[str] = None
+    description: str
+    is_published: bool = True
+
+class PublicEventOut(PublicEventCreate):
+    id: uuid.UUID
+    created_by: uuid.UUID
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

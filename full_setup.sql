@@ -21,6 +21,12 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     bio TEXT,
     role TEXT NOT NULL CHECK (role IN ('student', 'faculty', 'alumni', 'admin')),
     is_active BOOLEAN DEFAULT true,
+    consent_given BOOLEAN DEFAULT false,
+    consent_timestamp TIMESTAMPTZ,
+    is_first_login BOOLEAN DEFAULT false,
+    failed_login_attempts INTEGER DEFAULT 0,
+    locked_until TIMESTAMPTZ,
+    last_login TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -29,7 +35,6 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE TABLE IF NOT EXISTS public.students (
     id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
     student_id TEXT UNIQUE NOT NULL,
-    date_of_birth DATE,
     year_of_study INTEGER CHECK (year_of_study BETWEEN 1 AND 6),
     graduation_year INTEGER,
     enrollment_date DATE DEFAULT CURRENT_DATE,
@@ -85,6 +90,23 @@ CREATE TABLE IF NOT EXISTS public.yearbook_entries (
     UNIQUE(user_id, academic_year)
 );
 
+-- ===== SHARED MEMORIES TABLE =====
+CREATE TABLE IF NOT EXISTS public.memory_submissions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    submitted_by UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    story TEXT NOT NULL,
+    media_url TEXT,
+    academic_year TEXT NOT NULL,
+    event_name TEXT,
+    location TEXT,
+    status TEXT DEFAULT 'pending',
+    rejection_reason TEXT,
+    reviewed_by UUID REFERENCES public.profiles(id),
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ===== CONNECTIONS TABLE =====
 CREATE TABLE IF NOT EXISTS public.connections (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -107,6 +129,41 @@ CREATE TABLE IF NOT EXISTS public.announcements (
     target_roles TEXT[] DEFAULT '{}',
     is_published BOOLEAN DEFAULT false,
     published_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ===== PUBLIC EVENTS TABLE =====
+CREATE TABLE IF NOT EXISTS public.public_events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    event_date TEXT NOT NULL,
+    location TEXT,
+    description TEXT NOT NULL,
+    is_published BOOLEAN DEFAULT true,
+    created_by UUID REFERENCES public.profiles(id),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ===== NOTIFICATIONS TABLE =====
+CREATE TABLE IF NOT EXISTS public.notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    link TEXT,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ===== MODERATION LOGS TABLE =====
+CREATE TABLE IF NOT EXISTS public.moderation_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    entry_id UUID NOT NULL REFERENCES public.yearbook_entries(id) ON DELETE CASCADE,
+    moderator_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    submitter_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    reason TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

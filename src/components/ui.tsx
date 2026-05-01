@@ -1,5 +1,5 @@
 import React from 'react';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, X } from 'lucide-react';
 import { cn, getInitials } from '../lib/utils';
 import { APP_FULL_NAME, APP_NAME } from '../lib/constants';
 
@@ -46,11 +46,14 @@ export function Card({
   );
 }
 
-export function PageHeader({ title, description }: { title: string; description: string }) {
+export function PageHeader({ title, description, action }: { title: string; description: string; action?: React.ReactNode }) {
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{title}</h1>
-      <p className="mt-2 text-gray-600 dark:text-gray-400">{description}</p>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{title}</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">{description}</p>
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }
@@ -184,6 +187,56 @@ export function AuthShell({
           </p>
         </div>
         {children}
+      </Card>
+    </div>
+  );
+}
+
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  size = 'md',
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+}) {
+  if (!isOpen) return null;
+
+  const sizeClasses = {
+    sm: 'max-w-md',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl',
+    full: 'max-w-[95vw]',
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      <div 
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+        onClick={onClose} 
+      />
+      <Card className={cn(
+        'relative z-10 w-full animate-in fade-in zoom-in duration-200 overflow-hidden shadow-2xl',
+        sizeClasses[size]
+      )}>
+        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-gray-700">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+        <div className="max-h-[85vh] overflow-y-auto p-6">
+          {children}
+        </div>
       </Card>
     </div>
   );

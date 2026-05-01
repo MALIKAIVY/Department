@@ -85,7 +85,7 @@ export const ManageStudents: React.FC = () => {
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => navigate('/admin')} className="p-2">
+        <Button variant="ghost" onClick={() => navigate('/dashboard')} className="p-2">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <PageHeader 

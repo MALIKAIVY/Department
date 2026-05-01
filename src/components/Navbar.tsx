@@ -1,15 +1,30 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings, Search, Moon, Sun } from 'lucide-react';
+import { Bell, LogOut, Settings, Search, Moon, Sun } from 'lucide-react';
 import { useAuthStore } from '../lib/stores/authStore';
 import { Avatar, Button } from './ui';
 import { useTheme } from '../lib/hooks/useTheme';
+import { api } from '../lib/api';
 
 export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { profile, signOut } = useAuthStore();
   const { isDark, toggleTheme } = useTheme();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const data = await api.fetch('/notifications/unread-count');
+        setUnreadCount(data.count || 0);
+      } catch {
+        setUnreadCount(0);
+      }
+    };
+
+    fetchUnread();
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -33,6 +48,20 @@ export const Navbar: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4">
+          <Button
+            onClick={() => navigate('/notifications')}
+            variant="ghost"
+            className="relative h-10 w-10 p-0"
+            aria-label="Notifications"
+          >
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-600 px-1.5 py-0.5 text-xs font-bold leading-none text-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Button>
+
           <Button
             onClick={toggleTheme}
             variant="ghost"
