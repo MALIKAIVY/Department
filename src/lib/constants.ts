@@ -70,12 +70,6 @@ export const NAV_ITEMS = [
     roles: USER_ROLES,
   },
   {
-    label: 'Admin Panel',
-    href: '/admin',
-    icon: BarChart3,
-    roles: ['admin', 'faculty'],
-  },
-  {
     label: 'Moderation',
     href: '/admin/moderation',
     icon: GraduationCap,

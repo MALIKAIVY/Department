@@ -15,6 +15,8 @@ import { ProfilePage } from './pages/ProfilePage';
 import { ProfileEdit } from './pages/ProfileEdit';
 import { Search } from './pages/Search';
 import { Admin } from './pages/Admin';
+import { ManageStudents } from './pages/ManageStudents';
+import { CreateAnnouncement } from './pages/CreateAnnouncement';
 import { NotFound } from './pages/NotFound';
 import { EmptyState } from './components/ui';
 import { ThemeProvider } from './lib/hooks/useTheme';
@@ -46,7 +48,8 @@ function App() {
             <Route path="/search" element={<Search />} />
             <Route path="/profile/:id" element={<ProfilePage />} />
             <Route path="/profile/edit" element={<ProfileEdit />} />
-            <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin', 'faculty']}><Admin /></ProtectedRoute>} />
+            <Route path="/admin/students/manage" element={<ProtectedRoute allowedRoles={['admin']}><ManageStudents /></ProtectedRoute>} />
+            <Route path="/admin/announcements/create" element={<ProtectedRoute allowedRoles={['admin', 'faculty']}><CreateAnnouncement /></ProtectedRoute>} />
             <Route
               path="/announcements"
               element={<EmptyState title="Announcements" description="No announcements yet. Stay tuned for updates." />}

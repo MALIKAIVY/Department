@@ -16,6 +16,7 @@ import {
   Sparkles,
   UserPlus,
   Users,
+  Zap,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Avatar, Button, Card, EmptyState, PageHeader, Spinner } from '../components/ui';
@@ -78,6 +79,8 @@ export const Dashboard: React.FC = () => {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [pendingQueue, setPendingQueue] = useState<YearbookEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [yearOfStudy, setYearOfStudy] = useState(4);
+  const [isProcessingGraduation, setIsProcessingGraduation] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -126,6 +129,25 @@ export const Dashboard: React.FC = () => {
     if (user?.role) fetchDashboard();
   }, [user?.role]);
 
+  const processGraduations = async () => {
+    if (!window.confirm(`Are you sure you want to transition all Year ${yearOfStudy} students to Alumni?`)) {
+      return;
+    }
+
+    setIsProcessingGraduation(true);
+    try {
+      const result = await api.fetch('/admin/graduations/process', {
+        method: 'POST',
+        body: JSON.stringify({ year_of_study: yearOfStudy }),
+      });
+      toast.success(`Successfully transitioned ${result.processed_count} students to Alumni!`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to process graduations');
+    } finally {
+      setIsProcessingGraduation(false);
+    }
+  };
+
   const role = user?.role || 'student';
   const copy = roleCopy[role];
   const acceptedConnections = connections.filter((connection) => connection.status === 'accepted').length;
@@ -161,18 +183,18 @@ export const Dashboard: React.FC = () => {
     if (role === 'faculty') {
       return [
         {
+          label: 'Create announcement',
+          description: 'Post an update with optional media.',
+          href: '/admin/announcements/create',
+          icon: Megaphone,
+          variant: 'success',
+        },
+        {
           label: 'Review submissions',
           description: `${pendingQueue.length || stats.pendingEntries} entries need attention.`,
           href: '/admin',
           icon: ShieldCheck,
           variant: 'primary',
-        },
-        {
-          label: 'Create announcement',
-          description: 'Post an update with optional media.',
-          href: '/admin',
-          icon: Megaphone,
-          variant: 'success',
         },
         {
           label: 'Search profiles',
@@ -212,24 +234,24 @@ export const Dashboard: React.FC = () => {
 
     return [
       {
-        label: 'Open admin panel',
-        description: 'Manage moderation, announcements, and operations.',
-        href: '/admin',
-        icon: ShieldCheck,
-        variant: 'primary',
-      },
-      {
-        label: 'Review pending entries',
-        description: `${stats.pendingEntries} submissions are waiting.`,
-        href: '/admin',
-        icon: Clock,
+        label: 'Create announcement',
+        description: 'Publish a new department-wide update.',
+        href: '/admin/announcements/create',
+        icon: Megaphone,
         variant: 'success',
       },
       {
-        label: 'Search directory',
-        description: 'Find any profile in the department network.',
-        href: '/search',
-        icon: Search,
+        label: 'Add students',
+        description: 'Manual or bulk student account creation.',
+        href: '/admin/students/manage',
+        icon: UserPlus,
+        variant: 'primary',
+      },
+      {
+        label: 'Review submissions',
+        description: `${stats.pendingEntries} submissions are waiting.`,
+        href: '/admin',
+        icon: Clock,
         variant: 'secondary',
       },
     ];
@@ -285,6 +307,46 @@ export const Dashboard: React.FC = () => {
           <MetricCard key={stat.label} {...stat} />
         ))}
       </section>
+
+      {user?.role === 'admin' && (
+        <Card className="p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200 dark:from-yellow-900/10 dark:to-orange-900/10 dark:border-yellow-900/30">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-yellow-600 rounded-xl text-white shadow-lg shadow-yellow-500/20">
+                <Zap className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-950 dark:text-white">Process Annual Graduations</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 max-w-md">
+                  Transition all students in their final year to Alumni status. This will update their roles and permissions.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400 mb-1 ml-1">Student Year</span>
+                <select
+                  value={yearOfStudy}
+                  onChange={(e) => setYearOfStudy(parseInt(e.target.value))}
+                  className="rounded-lg border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold shadow-sm focus:border-yellow-500 focus:ring-yellow-500 dark:border-gray-700 dark:bg-gray-800"
+                >
+                  {[4, 5, 6, 7].map((year) => (
+                    <option key={year} value={year}>Year {year} Students</option>
+                  ))}
+                </select>
+              </div>
+              <Button 
+                onClick={processGraduations} 
+                disabled={isProcessingGraduation}
+                className="mt-5 md:mt-0 bg-yellow-600 hover:bg-yellow-700 text-white border-none shadow-lg shadow-yellow-500/20"
+              >
+                {isProcessingGraduation ? <Spinner className="h-4 w-4 mr-2" /> : <GraduationCap className="h-4 w-4 mr-2" />}
+                Transition to Alumni
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <RoleDetailPanel
