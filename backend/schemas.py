@@ -140,7 +140,7 @@ class FacultyCreate(BaseModel):
 class BulkStudentItem(BaseModel):
     email: EmailStr
     full_name: str
-    student_id: str
+    student_id: Optional[str] = None
     graduation_year: int
     password: Optional[str] = None
 
@@ -150,7 +150,7 @@ class BulkStudentCreate(BaseModel):
 class BulkFacultyItem(BaseModel):
     email: EmailStr
     full_name: str
-    faculty_id: str
+    faculty_id: Optional[str] = None
     department: str
     designation: str
     password: Optional[str] = None

@@ -303,25 +303,23 @@ export const ManageUsers: React.FC = () => {
             />
           </Field>
 
-          <Field label="Initial Password">
+          <Field label="Initial Password (Optional)">
             <Input
               type="password"
               value={newUser.password}
               onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-              placeholder="Enter secure password"
-              required
+              placeholder="Leave blank to email an auto-generated password"
             />
           </Field>
 
           {newUser.role === 'student' && (
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Student ID">
+              <Field label="Student ID (Optional)">
                 <Input
                   type="text"
                   value={newUser.student_id}
                   onChange={(e) => setNewUser({...newUser, student_id: e.target.value})}
-                  placeholder="STU001"
-                  required
+                  placeholder="Leave blank to auto-generate"
                 />
               </Field>
               <Field label="Graduation Year">

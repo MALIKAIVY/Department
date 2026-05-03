@@ -7,7 +7,6 @@ import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { PublicLanding } from './pages/PublicLanding';
 import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
@@ -42,7 +41,6 @@ function App() {
         <Routes>
           <Route path="/" element={<PublicLanding />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
 
           <Route
             element={

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Lock, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthShell, Button, Card, Field, Input } from '../components/ui';
@@ -117,10 +117,7 @@ export const Login: React.FC = () => {
       </form>
 
       <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-        Don't have an account?{' '}
-        <Link to="/register" className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">
-          Create one
-        </Link>
+        Accounts are created by the department administrator. Check your email for your temporary login details.
       </p>
 
       <div className="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">

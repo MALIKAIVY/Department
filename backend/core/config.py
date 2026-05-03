@@ -1,11 +1,16 @@
 from pydantic_settings import BaseSettings
 from typing import List, Union
 import json
+from pathlib import Path
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+PROJECT_DIR = BACKEND_DIR.parent
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "DTCY Production API"
     API_V1_STR: str = "/api/v1"
     DEBUG: bool = True
+    ALLOW_PUBLIC_REGISTRATION: bool = False
     
     SECRET_KEY: str = "supersecretkey_please_change_in_production_dtcy"
     ALGORITHM: str = "HS256"
@@ -14,8 +19,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:Pass1234@localhost/dtcy"
     
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174"]
+    FRONTEND_URL: str = "http://localhost:5173"
 
     # Email Settings
+    MAIL_ENABLED: bool = True
     MAIL_USERNAME: str = ""
     MAIL_PASSWORD: str = ""
     MAIL_FROM: str = "admin@example.com"
@@ -29,6 +36,7 @@ class Settings(BaseSettings):
 
     class Config:
         case_sensitive = True
-        env_file = ".env"
+        env_file = (PROJECT_DIR / ".env", BACKEND_DIR / ".env")
+        extra = "ignore"
 
 settings = Settings()

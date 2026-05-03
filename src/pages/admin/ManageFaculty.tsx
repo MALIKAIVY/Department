@@ -59,7 +59,7 @@ export const ManageFaculty: React.FC = () => {
           faculty.push({
             email: parts[0].trim(),
             full_name: parts[1].trim(),
-            faculty_id: parts[2]?.trim() || `FAC-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+            faculty_id: parts[2]?.trim() || undefined,
             department: parts[3]?.trim() || 'Department of Technology',
             designation: parts[4]?.trim() || 'Faculty Member',
           });
@@ -132,23 +132,21 @@ export const ManageFaculty: React.FC = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500 uppercase">Initial Password</label>
+                <label className="text-xs font-medium text-gray-500 uppercase">Initial Password (Optional)</label>
                 <Input
                   type="password"
-                  placeholder="Enter secure password"
+                  placeholder="Leave blank to email an auto-generated password"
                   value={manualFaculty.password}
                   onChange={(e) => setManualFaculty({ ...manualFaculty, password: e.target.value })}
-                  required
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500 uppercase">Faculty ID</label>
-                  <Input
-                    placeholder="e.g. FAC001"
+                <label className="text-xs font-medium text-gray-500 uppercase">Faculty ID (Optional)</label>
+                <Input
+                    placeholder="Leave blank to auto-generate"
                     value={manualFaculty.faculty_id}
                     onChange={(e) => setManualFaculty({ ...manualFaculty, faculty_id: e.target.value })}
-                    required
                   />
                 </div>
                 <div className="space-y-1">
@@ -186,7 +184,7 @@ export const ManageFaculty: React.FC = () => {
               <FileSpreadsheet className="mb-4 h-12 w-12 text-gray-400" />
               <p className="mb-2 font-medium text-gray-900 dark:text-white">Upload Faculty CSV</p>
               <p className="mb-6 text-sm text-gray-500 max-w-xs mx-auto">
-                Format: email, name, faculty_id, department, designation
+                Format: email, name, faculty_id(optional), department, designation
               </p>
               <label className="cursor-pointer rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 active:scale-95">
                 Select CSV File

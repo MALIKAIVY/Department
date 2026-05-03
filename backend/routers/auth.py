@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import schemas, models, database
 from core import security
+from core.config import settings
 from core.security import get_current_user
 import uuid
 from datetime import datetime, timedelta
@@ -30,6 +31,9 @@ def auth_user_payload(user: models.Profile):
 
 @router.post("/register", response_model=schemas.Token)
 async def register(user_in: schemas.UserCreate, db: AsyncSession = Depends(database.get_db)):
+    if not settings.ALLOW_PUBLIC_REGISTRATION:
+        raise HTTPException(status_code=403, detail="Public registration is disabled. Accounts are created by an administrator.")
+
     # Check if user exists
     result = await db.execute(select(models.Profile).filter(models.Profile.email == user_in.email))
     if result.scalars().first():

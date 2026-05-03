@@ -61,7 +61,7 @@ export const ManageStudents: React.FC = () => {
           students.push({
             email: parts[0].trim(),
             full_name: parts[1].trim(),
-            student_id: parts[2]?.trim() || `STU-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+            student_id: parts[2]?.trim() || undefined,
             graduation_year: parseInt(parts[3]?.trim()) || currentYear + 4,
           });
         }
@@ -133,23 +133,21 @@ export const ManageStudents: React.FC = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Initial Password</label>
+                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Initial Password (Optional)</label>
                 <Input
                   type="password"
-                  placeholder="Enter secure password"
+                  placeholder="Leave blank to email an auto-generated password"
                   value={manualStudent.password}
                   onChange={(e) => setManualStudent({ ...manualStudent, password: e.target.value })}
-                  required
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500 uppercase ml-1">Student ID</label>
+                  <label className="text-xs font-bold text-gray-500 uppercase ml-1">Student ID (Optional)</label>
                   <Input
-                    placeholder="e.g. 2024001"
+                    placeholder="Leave blank to auto-generate"
                     value={manualStudent.student_id}
                     onChange={(e) => setManualStudent({ ...manualStudent, student_id: e.target.value })}
-                    required
                   />
                 </div>
                 <div className="space-y-1">
@@ -182,7 +180,7 @@ export const ManageStudents: React.FC = () => {
               <p className="mb-2 font-semibold text-gray-900 dark:text-white">Upload Class CSV</p>
               <p className="mb-6 text-xs text-gray-500 max-w-xs mx-auto leading-relaxed">
                 Expected CSV Format: <br />
-                <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">email, full_name, student_id, grad_year</code>
+                <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">email, full_name, student_id(optional), grad_year</code>
               </p>
               <label className="cursor-pointer rounded-2xl bg-blue-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-blue-700 active:scale-95 shadow-lg shadow-blue-500/20">
                 Select CSV File

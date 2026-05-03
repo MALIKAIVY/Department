@@ -1,65 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, CalendarDays, GraduationCap, Leaf, Lock, Users } from 'lucide-react';
-import { Avatar, Button, Card, Spinner } from '../components/ui';
-import { api } from '../lib/api';
-
-type PublicFaculty = {
-  id: string;
-  full_name: string;
-  avatar_url?: string | null;
-  email: string;
-  designation: string;
-  department: string;
-};
-
-type PublicOverview = {
-  stats: {
-    students: number;
-    alumni: number;
-    faculty: number;
-  };
-  faculty: PublicFaculty[];
-  events: Array<{
-    title: string;
-    date: string;
-    location?: string | null;
-    description: string;
-  }>;
-};
-
-const fallbackOverview: PublicOverview = {
-  stats: {
-    students: 0,
-    alumni: 0,
-    faculty: 0,
-  },
-  faculty: [],
-  events: [],
-};
+import { ArrowRight, GraduationCap, Leaf, Lock, Users } from 'lucide-react';
+import { Button } from '../components/ui';
 
 export const PublicLanding: React.FC = () => {
-  const [overview, setOverview] = useState<PublicOverview>(fallbackOverview);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchOverview = async () => {
-      try {
-        const data = await api.fetch('/users/public/overview');
-        setOverview(data || fallbackOverview);
-      } catch {
-        setOverview(fallbackOverview);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchOverview();
-  }, []);
-
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-950 dark:bg-gray-950 dark:text-white">
-      <header className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <main className="flex min-h-screen flex-col bg-white text-gray-950 dark:bg-gray-950 dark:text-white">
+      <header className="border-b border-gray-100 bg-white/95 dark:border-gray-800 dark:bg-gray-950/95">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <span className="rounded-lg bg-blue-600 p-2 text-white">
@@ -72,154 +19,71 @@ export const PublicLanding: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <Link to="/login">
-              <Button variant="secondary">Login</Button>
-            </Link>
-            <Link to="/register">
-              <Button>Join</Button>
+              <Button>Login</Button>
             </Link>
           </div>
         </div>
       </header>
 
-      <section className="bg-white dark:bg-gray-900">
-        <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
-          <div>
+      <section className="flex flex-1 items-center">
+        <div className="mx-auto w-full max-w-6xl px-6 py-16 text-center sm:py-20">
+          <div className="mx-auto max-w-4xl">
             <p className="text-sm font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400">
               Digital Tech-Connect Yearbook
             </p>
-            <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-tight text-gray-950 dark:text-white md:text-5xl">
+            <h1 className="mx-auto mt-5 max-w-4xl text-5xl font-bold leading-tight text-gray-950 dark:text-white md:text-6xl">
               A living yearbook for students, faculty, and alumni.
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-gray-600 dark:text-gray-300">
-              DTCY centralizes department profiles, yearbook memories, alumni networking, and faculty visibility in one responsive platform.
+            <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-gray-600 dark:text-gray-300">
+              DTCY brings the Department of Technology into one digital space where students preserve their yearbook stories, faculty stay visible, and alumni remain connected after graduation.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link to="/login">
-                <Button className="px-5 py-3">
+                <Button className="w-full px-6 py-3 sm:w-auto">
                   Student Login
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link to="/login">
-                <Button variant="secondary" className="px-5 py-3">Faculty Login</Button>
+                <Button variant="secondary" className="w-full px-6 py-3 sm:w-auto">Faculty Login</Button>
               </Link>
               <Link to="/login">
-                <Button variant="secondary" className="px-5 py-3">Alumni Login</Button>
+                <Button variant="secondary" className="w-full px-6 py-3 sm:w-auto">Alumni Login</Button>
               </Link>
             </div>
           </div>
 
-          <Card className="p-6">
-            <div className="flex items-center gap-3">
-              <span className="rounded-lg bg-emerald-100 p-3 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                <Leaf className="h-6 w-6" />
+          <div className="mx-auto mt-14 grid max-w-5xl gap-5 border-y border-gray-100 py-8 text-left dark:border-gray-800 md:grid-cols-3">
+            <div className="flex gap-4">
+              <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                <Users className="h-5 w-5" />
               </span>
               <div>
-                <h2 className="text-lg font-semibold">Sustainable by design</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Digital-first records replace printed yearbooks and stay useful after graduation.</p>
+                <h2 className="font-semibold text-gray-950 dark:text-white">One department hub</h2>
+                <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-400">Profiles, yearbook entries, memories, and alumni connections live in one place.</p>
               </div>
             </div>
-            <div className="mt-6 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-              <div className="flex items-start gap-3">
-                <Lock className="mt-0.5 h-5 w-5 text-blue-600 dark:text-blue-400" />
-                <p className="text-sm leading-6 text-gray-700 dark:text-gray-300">
-                  Privacy note: age is not collected, stored, displayed, or searchable anywhere in the platform.
-                </p>
+            <div className="flex gap-4">
+              <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                <Leaf className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="font-semibold text-gray-950 dark:text-white">Digital-first records</h2>
+                <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-400">The yearbook stays useful after graduation and reduces printed records.</p>
               </div>
             </div>
-          </Card>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 py-10">
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Spinner />
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-3">
-            <Stat icon={Users} label="Current Students" value={overview.stats.students} />
-            <Stat icon={BookOpen} label="Alumni" value={overview.stats.alumni} />
-            <Stat icon={GraduationCap} label="Faculty" value={overview.stats.faculty} />
-          </div>
-        )}
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-8 px-6 pb-14 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div>
-          <SectionTitle title="Faculty Directory" description="Public faculty information approved for visitor access." />
-          <div className="grid gap-4 sm:grid-cols-2">
-            {overview.faculty.length === 0 ? (
-              <Card className="p-6 text-sm text-gray-600 dark:text-gray-400">Faculty profiles will appear here once available.</Card>
-            ) : (
-              overview.faculty.map((member) => (
-                <Card key={member.id} className="p-4">
-                  <div className="flex items-center gap-4">
-                    <Avatar name={member.full_name} src={member.avatar_url} className="h-12 w-12" />
-                    <div>
-                      <h3 className="font-semibold text-gray-950 dark:text-white">{member.full_name}</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{member.designation}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500">{member.department}</p>
-                    </div>
-                  </div>
-                </Card>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div>
-          <SectionTitle title="Upcoming Events" description="Department calendar highlights." />
-          <div className="space-y-4">
-            {overview.events.length === 0 ? (
-              <Card className="p-4 text-sm text-gray-600 dark:text-gray-400">
-                Upcoming department events will appear here once published by an administrator.
-              </Card>
-            ) : overview.events.map((event) => (
-              <Card key={event.title} className="p-4">
-                <div className="flex gap-3">
-                  <span className="rounded-lg bg-blue-50 p-2 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                    <CalendarDays className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <h3 className="font-semibold text-gray-950 dark:text-white">{event.title}</h3>
-                    <p className="text-xs font-medium text-blue-600 dark:text-blue-400">{event.date}</p>
-                    {event.location && (
-                      <p className="text-xs text-gray-500 dark:text-gray-500">{event.location}</p>
-                    )}
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{event.description}</p>
-                  </div>
-                </div>
-              </Card>
-            ))}
+            <div className="flex gap-4">
+              <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                <Lock className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="font-semibold text-gray-950 dark:text-white">Privacy aware</h2>
+                <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-400">Age is not collected, stored, displayed, or searchable anywhere in the platform.</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
     </main>
   );
 };
-
-function Stat({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number }) {
-  return (
-    <Card className="p-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{label}</p>
-          <p className="mt-2 text-3xl font-bold text-gray-950 dark:text-white">{value}</p>
-        </div>
-        <span className="rounded-lg bg-blue-50 p-3 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-          <Icon className="h-6 w-6" />
-        </span>
-      </div>
-    </Card>
-  );
-}
-
-function SectionTitle({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="mb-4">
-      <h2 className="text-xl font-bold text-gray-950 dark:text-white">{title}</h2>
-      <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{description}</p>
-    </div>
-  );
-}
